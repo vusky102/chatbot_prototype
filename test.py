@@ -51,6 +51,19 @@ def retrieve_knowledge(query):
         for item in matches
     )
 
+# funcion_def= {
+#     "type":"function",
+#     "function":{
+#         "type":"object",
+#         "name":"retrieve_knowledge",
+#         "description":"retreive knowledge from knowledge base related to HR",
+#         "paremeters":{
+#             "result":{
+#                 "type":"string"
+#             }
+#         }
+#     }
+# }
 
 def main():
     api_key = os.getenv("OPENAI_API_KEY")
@@ -183,6 +196,7 @@ def main():
         context_dict = {
             "role": "system",
             "content": f"Retrieved knowledge for this question:\n{knowledge_context}",
+            #"tools":funcion_def
         }
 
         try:
