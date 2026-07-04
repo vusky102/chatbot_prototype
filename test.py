@@ -107,7 +107,7 @@ def get_assistant_reply(client, model, messages):
             return message.content or ""
 
         messages.append(message.model_dump(exclude_none=True))
-        print(message.tool_calls)
+        #print(message.tool_calls)
         for tool_call in message.tool_calls:
             arguments = json.loads(tool_call.function.arguments)
             result = run_tool(tool_call.function.name, arguments)
