@@ -1,3 +1,4 @@
+import json
 import os
 import re
 
@@ -50,6 +51,60 @@ def retrieve_knowledge(query):
         f"Source: {item['source']}\nContent: {item['content']}"
         for item in matches
     )
+
+
+RETRIEVE_KNOWLEDGE_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "retrieve_knowledge",
+        "description": (
+            "Search the company knowledge base for HR policies, IT support "
+            "guides, onboarding information, and other internal documentation."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Search query based on the employee's question.",
+                }
+            },
+            "required": ["query"],
+        },
+    },
+}
+
+
+def run_tool(name, arguments):
+    if name == "retrieve_knowledge":
+        return retrieve_knowledge(arguments.get("query", ""))
+    return f"Unknown tool: {name}"
+
+
+def get_assistant_reply(client, model, messages):
+    while True:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            tools=[RETRIEVE_KNOWLEDGE_TOOL],
+        )
+        message = response.choices[0].message
+
+        if not message.tool_calls:
+            return message.content or ""
+
+        messages.append(message.model_dump(exclude_none=True))
+        print(message.tool_calls)
+        for tool_call in message.tool_calls:
+            arguments = json.loads(tool_call.function.arguments)
+            result = run_tool(tool_call.function.name, arguments)
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": result,
+                }
+            )
 
 
 def main():
@@ -179,18 +234,9 @@ def main():
 
         user_dict = {"role": "user", "content": user_input}
         messages.append(user_dict)
-        knowledge_context = retrieve_knowledge(user_input)
-        context_dict = {
-            "role": "system",
-            "content": f"Retrieved knowledge for this question:\n{knowledge_context}",
-        }
 
         try:
-            response = client.chat.completions.create(
-                model=model,
-                messages=[*messages, context_dict],
-            )
-            assistant_text = response.choices[0].message.content or ""
+            assistant_text = get_assistant_reply(client, model, messages)
         except Exception as error:
             messages.pop()
             print(f"Error: {error}")
