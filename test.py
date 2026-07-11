@@ -305,11 +305,24 @@ class TextToSpeechRouter:
         return self.models[language]
 
     def play(self, output_path):
-        if platform.system() != "Darwin":
+        path = str(output_path)
+        system = platform.system()
+ 
+        try:
+            if system == "Darwin":
+                subprocess.run(["afplay", path], check=True)
+                return
+ 
+            if system == "Windows":
+                import winsound
+ 
+                winsound.PlaySound(path, winsound.SND_FILENAME)
+                return
+ 
             print(f"TTS audio saved: {output_path}")
-            return
-
-        subprocess.run(["afplay", str(output_path)], check=True)
+        except Exception as error:
+            print(f"TTS audio saved: {output_path}")
+            print(f"TTS playback warning: {error}")
 
 
 def main():
