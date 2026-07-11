@@ -243,6 +243,19 @@ def detect_text_language(text, default_language):
 
 
 class TextToSpeechRouter:
+    VOICES = {
+        "eng": (
+            {"name": "en-US-AriaNeural", "gender": "Female"},
+            {"name": "en-US-JennyNeural", "gender": "Female"},
+            {"name": "en-US-GuyNeural", "gender": "Male"},
+            {"name": "en-US-ChristopherNeural", "gender": "Male"},
+        ),
+        "vie": (
+            {"name": "vi-VN-HoaiMyNeural", "gender": "Female"},
+            {"name": "vi-VN-NamMinhNeural", "gender": "Male"},
+        ),
+    }
+
     def __init__(self):
         self.enabled = get_bool_env("TTS_ENABLED", default=False)
         self.autoplay = get_bool_env("TTS_AUTOPLAY", default=True)
@@ -250,18 +263,39 @@ class TextToSpeechRouter:
             os.getenv("TTS_DEFAULT_LANGUAGE", "eng")
         ) or "eng"
         self.audio_dir = Path(os.getenv("TTS_AUDIO_DIR", "generated_audio"))
-        self.model_names = {
-            "eng": os.getenv("TTS_MODEL_ENG", "facebook/mms-tts-eng"),
-            "vie": os.getenv("TTS_MODEL_VIE", "facebook/mms-tts-vie"),
+        self.voice_positions = {
+            "eng": self.get_voice_position("eng"),
+            "vie": self.get_voice_position("vie"),
         }
-        self.models = {}
+
+    def get_voice_position(self, language):
+        env_name = f"TTS_VOICE_POSITION_{language.upper()}"
+        raw_position = os.getenv(env_name, "0")
+
+        try:
+            position = int(raw_position)
+        except ValueError:
+            print(f"TTS warning: {env_name} must be an integer; using 0")
+            return 0
+
+        if not 0 <= position < len(self.VOICES[language]):
+            print(
+                f"TTS warning: {env_name}={position} is out of range; using 0"
+            )
+            return 0
+
+        return position
+
+    def get_voice(self, language):
+        position = self.voice_positions[language]
+        return self.VOICES[language][position]["name"]
 
     def speak(self, text):
         if not self.enabled or not text.strip():
             return
 
         language = detect_text_language(text, self.default_language)
-        if language not in self.model_names:
+        if language not in self.VOICES:
             language = self.default_language
 
         try:
@@ -272,37 +306,14 @@ class TextToSpeechRouter:
             print(f"TTS warning: {error}")
 
     def synthesize(self, text, language):
-        tokenizer, model = self.load_model(language)
-        inputs = tokenizer(text, return_tensors="pt")
+        import edge_tts
 
-        import scipy.io.wavfile
-        import torch
-
-        with torch.no_grad():
-            output = model(**inputs).waveform
-
-        audio = output.squeeze().float().cpu().numpy()
         self.audio_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        output_path = self.audio_dir / f"assistant_{timestamp}_{language}.wav"
-        scipy.io.wavfile.write(
-            output_path,
-            rate=model.config.sampling_rate,
-            data=audio,
-        )
+        output_path = self.audio_dir / f"assistant_{timestamp}_{language}.mp3"
+        communicate = edge_tts.Communicate(text, self.get_voice(language))
+        communicate.save_sync(str(output_path))
         return output_path
-
-    def load_model(self, language):
-        if language not in self.models:
-            from transformers import AutoModelForTextToWaveform, AutoTokenizer
-
-            model_name = self.model_names[language]
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-            model = AutoModelForTextToWaveform.from_pretrained(model_name)
-            model.eval()
-            self.models[language] = (tokenizer, model)
-
-        return self.models[language]
 
     def play(self, output_path):
         path = str(output_path)
@@ -314,9 +325,7 @@ class TextToSpeechRouter:
                 return
  
             if system == "Windows":
-                import winsound
- 
-                winsound.PlaySound(path, winsound.SND_FILENAME)
+                os.startfile(path)
                 return
  
             print(f"TTS audio saved: {output_path}")

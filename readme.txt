@@ -9,9 +9,9 @@ The chatbot:
 - Keeps conversation history for the current terminal session.
 - Retrieves answers from a small in-memory company knowledge base.
 - Prints the assistant response as text.
-- Converts each assistant response to speech with local Hugging Face MMS TTS.
-- Routes English audio to facebook/mms-tts-eng.
-- Routes Vietnamese audio to facebook/mms-tts-vie.
+- Converts each assistant response to speech with Microsoft Edge's online TTS
+  service through the edge-tts Python package.
+- Routes English and Vietnamese audio to configurable Microsoft neural voices.
 - Autoplays generated audio on macOS with afplay.
 
 
@@ -20,15 +20,17 @@ Prerequisites
 
 - Python 3.9 or newer
 - pip
-- macOS for automatic audio playback through afplay
+- macOS or Windows for automatic audio playback
 - An API key for OpenAI or another OpenAI-compatible API
 - The API base URL and model name supplied by your API provider
-- Internet access the first time Hugging Face TTS models are downloaded
+- Internet access whenever speech is generated with Edge TTS
 
 Note:
 
-The MMS TTS models are licensed CC-BY-NC 4.0. Treat this prototype as
-non-commercial unless you have separate permission for commercial use.
+The edge-tts package does not require a Microsoft API key or local model
+downloads. It is an unofficial client for Microsoft Edge's online speech
+service, so synthesis depends on that service and an active internet
+connection.
 
 
 1. Open a terminal in the project directory
@@ -56,14 +58,14 @@ py -m venv .venv
 
 macOS/Linux:
 
-python3 -m pip install -r requirement.txt
+python3 -m pip install -r requirements.txt
 
 Windows:
 
-py -m pip install -r requirement.txt
+py -m pip install -r requirements.txt
 
-Installed packages include the OpenAI client, python-dotenv, Transformers,
-PyTorch, SciPy, Accelerate, and langdetect.
+Installed packages include the OpenAI client, python-dotenv, edge-tts, and
+langdetect.
 
 
 4. Create the local .env file
@@ -79,8 +81,8 @@ TTS_ENABLED=true
 TTS_AUTOPLAY=true
 TTS_DEFAULT_LANGUAGE=eng
 TTS_AUDIO_DIR=generated_audio
-TTS_MODEL_ENG=facebook/mms-tts-eng
-TTS_MODEL_VIE=facebook/mms-tts-vie
+TTS_VOICE_POSITION_ENG=0
+TTS_VOICE_POSITION_VIE=0
 
 Example for the official OpenAI API:
 
@@ -92,8 +94,8 @@ TTS_ENABLED=true
 TTS_AUTOPLAY=true
 TTS_DEFAULT_LANGUAGE=eng
 TTS_AUDIO_DIR=generated_audio
-TTS_MODEL_ENG=facebook/mms-tts-eng
-TTS_MODEL_VIE=facebook/mms-tts-vie
+TTS_VOICE_POSITION_ENG=0
+TTS_VOICE_POSITION_VIE=0
 
 If the team uses another OpenAI-compatible provider, use the model name and
 base URL supplied by that provider.
@@ -140,17 +142,38 @@ How TTS Works
 After the assistant prints a text answer, test.py detects whether the answer
 is English or Vietnamese.
 
-- English responses use facebook/mms-tts-eng.
-- Vietnamese responses use facebook/mms-tts-vie.
+- English responses use the voice selected by TTS_VOICE_POSITION_ENG.
+- Vietnamese responses use the voice selected by TTS_VOICE_POSITION_VIE.
 - Unknown or low-confidence language detection falls back to TTS_DEFAULT_LANGUAGE.
 
-Models are loaded lazily. The first English answer downloads and loads the
-English model. The first Vietnamese answer downloads and loads the Vietnamese
-model. Later answers reuse the loaded model during the same process.
+Voice positions are zero-based. Position 0 is the default female voice.
 
-Generated WAV files are written to generated_audio/ with timestamped names.
-On macOS, TTS_AUTOPLAY=true plays the WAV file automatically with afplay.
-On other operating systems, the audio file is saved and its path is printed.
+English voices:
+
+0  en-US-AriaNeural          Female
+1  en-US-JennyNeural         Female
+2  en-US-GuyNeural           Male
+3  en-US-ChristopherNeural   Male
+
+Vietnamese voices:
+
+0  vi-VN-HoaiMyNeural        Female
+1  vi-VN-NamMinhNeural       Male
+
+For example, select a male voice for each language with:
+
+TTS_VOICE_POSITION_ENG=2
+TTS_VOICE_POSITION_VIE=1
+
+If a position is not an integer, is negative, or is outside the corresponding
+list, the router prints a warning and uses position 0. The old TTS_MODEL_ENG
+and TTS_MODEL_VIE settings are no longer used.
+
+Edge TTS sends the text to Microsoft's online service for synthesis. Generated
+MP3 files are written to generated_audio/ with timestamped names. On macOS,
+TTS_AUTOPLAY=true plays the MP3 file automatically with afplay. On Windows,
+the MP3 opens with the registered default application. On Linux, the file is
+saved and its path is printed.
 
 To temporarily disable audio:
 
@@ -162,11 +185,11 @@ Troubleshooting
 
 ModuleNotFoundError: No module named 'openai'
     Activate the virtual environment and run:
-    python3 -m pip install -r requirement.txt
+    python3 -m pip install -r requirements.txt
 
-ModuleNotFoundError: No module named 'transformers'
+ModuleNotFoundError: No module named 'edge_tts'
     Install the TTS dependencies:
-    python3 -m pip install -r requirement.txt
+    python3 -m pip install -r requirements.txt
 
 Missing environment variables
     Confirm that .env is in the same directory as test.py and contains
@@ -185,12 +208,17 @@ Connection or endpoint error
     https://api.openai.com/v1
 
 TTS warning during first audio response
-    The app may need to download the Hugging Face model files. Confirm that the
-    machine has internet access and that the model names in .env are correct.
+    Edge TTS requires internet access for every audio response. Confirm that
+    the machine can reach Microsoft's online speech service and try again.
+
+TTS voice position warning
+    Confirm TTS_VOICE_POSITION_ENG or TTS_VOICE_POSITION_VIE is a zero-based
+    integer listed in the voice tables above. Invalid values fall back to 0.
 
 No audio playback
     On macOS, confirm TTS_AUTOPLAY=true and that afplay is available. On
-    Windows/Linux, this prototype saves the WAV file but does not autoplay it.
+    Linux, this prototype saves the MP3 file but does not autoplay it. On
+    Windows, confirm the system has an application associated with MP3 files.
 
 Wrong TTS language
     The assistant is instructed to answer in the same language as the user.
