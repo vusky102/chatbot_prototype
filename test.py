@@ -1,16 +1,53 @@
 import json
 import os
+import platform
 import re
+import subprocess
+from datetime import datetime
+from pathlib import Path
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
 
+VIETNAMESE_DIACRITICS = set(
+    "àáạảãâầấậẩẫăằắặẳẵ"
+    "èéẹẻẽêềếệểễ"
+    "ìíịỉĩ"
+    "òóọỏõôồốộổỗơờớợởỡ"
+    "ùúụủũưừứựửữ"
+    "ỳýỵỷỹđ"
+    "ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ"
+    "ÈÉẸẺẼÊỀẾỆỂỄ"
+    "ÌÍỊỈĨ"
+    "ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ"
+    "ÙÚỤỦŨƯỪỨỰỬỮ"
+    "ỲÝỴỶỸĐ"
+)
+
+LANGDETECT_CODES = {
+    "en": "eng",
+    "eng": "eng",
+    "vi": "vie",
+    "vie": "vie",
+}
+
 KNOWLEDGE_BASE = [
     {
         "source": "Leave Policy",
-        "keywords": {"leave", "vacation", "annual", "pto"},
+        "keywords": {
+            "leave",
+            "vacation",
+            "annual",
+            "pto",
+            "nghỉ",
+            "nghi",
+            "phép",
+            "phep",
+            "ngày",
+            "ngay",
+        },
         "content": (
             "Employees receive 15 days of annual leave per year. "
             "Leave requests must be submitted to the manager at least 3 working "
@@ -19,7 +56,27 @@ KNOWLEDGE_BASE = [
     },
     {
         "source": "IT Support Guide",
-        "keywords": {"password", "login", "account", "locked", "it"},
+        "keywords": {
+            "password",
+            "login",
+            "account",
+            "locked",
+            "it",
+            "mật",
+            "mat",
+            "khẩu",
+            "khau",
+            "đăng",
+            "dang",
+            "nhập",
+            "nhap",
+            "tài",
+            "tai",
+            "khoản",
+            "khoan",
+            "khóa",
+            "khoa",
+        },
         "content": (
             "For password or login problems, reset the password through the "
             "company account portal or phone number +84-98-123-1234. Contact IT support if the account remains locked."
@@ -27,7 +84,27 @@ KNOWLEDGE_BASE = [
     },
     {
         "source": "Employee Onboarding",
-        "keywords": {"onboarding", "new", "employee", "first", "day"},
+        "keywords": {
+            "onboarding",
+            "new",
+            "employee",
+            "first",
+            "day",
+            "nhân",
+            "nhan",
+            "viên",
+            "vien",
+            "mới",
+            "moi",
+            "đầu",
+            "dau",
+            "tiên",
+            "tien",
+            "hội",
+            "hoi",
+            "nhập",
+            "nhap",
+        },
         "content": (
             "New employees must complete HR documents, security training, "
             "account setup, and the first-day orientation."
@@ -37,7 +114,7 @@ KNOWLEDGE_BASE = [
 
 
 def retrieve_knowledge(query):
-    query_words = set(re.findall(r"[a-z0-9]+", query.lower()))
+    query_words = set(re.findall(r"\w+", query.lower(), re.UNICODE))
     matches = [
         item
         for item in KNOWLEDGE_BASE
@@ -120,6 +197,121 @@ def get_assistant_reply(client, model, messages):
             )
 
 
+def get_bool_env(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def normalize_language(language):
+    if not language:
+        return None
+
+    normalized = language.strip().lower()
+    if normalized in {"en", "eng", "english"}:
+        return "eng"
+    if normalized in {"vi", "vie", "vietnamese", "tiếng việt"}:
+        return "vie"
+    return None
+
+
+def detect_text_language(text, default_language):
+    if any(character in VIETNAMESE_DIACRITICS for character in text):
+        return "vie"
+
+    try:
+        from langdetect import DetectorFactory, detect_langs
+    except ImportError:
+        return default_language
+
+    try:
+        DetectorFactory.seed = 0
+        candidates = detect_langs(text)
+    except Exception:
+        return default_language
+
+    if not candidates:
+        return default_language
+
+    candidate = candidates[0]
+    language = LANGDETECT_CODES.get(candidate.lang)
+    if language and candidate.prob >= 0.70:
+        return language
+
+    return default_language
+
+
+class TextToSpeechRouter:
+    def __init__(self):
+        self.enabled = get_bool_env("TTS_ENABLED", default=False)
+        self.autoplay = get_bool_env("TTS_AUTOPLAY", default=True)
+        self.default_language = normalize_language(
+            os.getenv("TTS_DEFAULT_LANGUAGE", "eng")
+        ) or "eng"
+        self.audio_dir = Path(os.getenv("TTS_AUDIO_DIR", "generated_audio"))
+        self.model_names = {
+            "eng": os.getenv("TTS_MODEL_ENG", "facebook/mms-tts-eng"),
+            "vie": os.getenv("TTS_MODEL_VIE", "facebook/mms-tts-vie"),
+        }
+        self.models = {}
+
+    def speak(self, text):
+        if not self.enabled or not text.strip():
+            return
+
+        language = detect_text_language(text, self.default_language)
+        if language not in self.model_names:
+            language = self.default_language
+
+        try:
+            output_path = self.synthesize(text, language)
+            if self.autoplay:
+                self.play(output_path)
+        except Exception as error:
+            print(f"TTS warning: {error}")
+
+    def synthesize(self, text, language):
+        tokenizer, model = self.load_model(language)
+        inputs = tokenizer(text, return_tensors="pt")
+
+        import scipy.io.wavfile
+        import torch
+
+        with torch.no_grad():
+            output = model(**inputs).waveform
+
+        audio = output.squeeze().float().cpu().numpy()
+        self.audio_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        output_path = self.audio_dir / f"assistant_{timestamp}_{language}.wav"
+        scipy.io.wavfile.write(
+            output_path,
+            rate=model.config.sampling_rate,
+            data=audio,
+        )
+        return output_path
+
+    def load_model(self, language):
+        if language not in self.models:
+            from transformers import AutoModelForTextToWaveform, AutoTokenizer
+
+            model_name = self.model_names[language]
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            model = AutoModelForTextToWaveform.from_pretrained(model_name)
+            model.eval()
+            self.models[language] = (tokenizer, model)
+
+        return self.models[language]
+
+    def play(self, output_path):
+        if platform.system() != "Darwin":
+            print(f"TTS audio saved: {output_path}")
+            return
+
+        subprocess.run(["afplay", str(output_path)], check=True)
+
+
 def main():
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("OPENAI_API_BASEURL")
@@ -131,6 +323,7 @@ def main():
         )
 
     client = OpenAI(api_key=api_key, base_url=base_url)
+    tts = TextToSpeechRouter()
     system_dict = {
         "role": "system",
         "content": """
@@ -225,6 +418,7 @@ def main():
         * Maintain a helpful, respectful, and professional tone.
         * Prioritize factual accuracy over speculation.
         * If uncertain, acknowledge the limitation instead of guessing.
+        * Answer in the same language as the user when possible.
         """,
     }
     messages = [system_dict]
@@ -259,6 +453,7 @@ def main():
         messages.append(assistant_dict)
 
         print(f"Assistant: {assistant_text}")
+        tts.speak(assistant_text)
 
 
 if __name__ == "__main__":
