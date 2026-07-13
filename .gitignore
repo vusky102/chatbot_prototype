@@ -1,2 +1,5 @@
 .env
 generated_audio/
+docs/Training_data_GD4/
+*.pdf
+output/
