@@ -1,7 +1,7 @@
 RAG Chatbot - Terminal Prototype
 ================================
 
-This repository contains a terminal chatbot in test.py.
+This repository contains a terminal chatbot in main.py.
 
 The chatbot:
 
@@ -71,24 +71,48 @@ langdetect.
 4. Create the local .env file
 -----------------------------
 
-Create a file named .env in the same directory as test.py:
+Create a file named .env in the same directory as main.py. This file contains private API keys and configuration settings for the LLM providers, vision engines, fallback client, and Text-to-Speech system.
 
-OPENAI_API_KEY=your_api_key
-OPENAI_API_MODEL=your_model_name
-OPENAI_API_BASEURL=https://your-provider-api-base-url
+Here is a schema of all supported environment variables:
 
-TTS_ENABLED=true
-TTS_AUTOPLAY=true
-TTS_DEFAULT_LANGUAGE=eng
-TTS_AUDIO_DIR=generated_audio
-TTS_VOICE_POSITION_ENG=0
-TTS_VOICE_POSITION_VIE=0
+Primary OpenAI-Compatible Client
+--------------------------------
+- OPENAI_API_KEY        : The API Key for your primary chat model (e.g. OpenAI or a proxy portal).
+- OPENAI_API_BASEURL    : The base URL of the primary API endpoint (e.g., https://api.openai.com/v1).
+- OPENAI_API_MODEL      : The model name to use for standard interaction (e.g., GPT-4o-mini).
 
-Example for the official OpenAI API:
+Vision AI API Client (Used for PDF visual elements / image extraction)
+---------------------------------------------------------------------
+- GEMINI_API_KEY        : Google Gemini API Key (recommended backend for layout analysis).
+- GEMINI_MODEL          : Model name for layout analysis (defaults to gemini-2.5-flash).
 
-OPENAI_API_KEY=replace_with_your_real_key
-OPENAI_API_MODEL=gpt-4.1-mini
+Fallback OpenRouter Client (Configured automatically if primary fails)
+----------------------------------------------------------------------
+- OPENROUTER_API_KEY    : OpenRouter API key for fallback operations.
+- OPENROUTER_BASE_URL   : The OpenRouter endpoint (typically https://openrouter.ai/api/v1).
+- OPENROUTER_API_MODEL  : The fallback model name (e.g. google/gemma-4-31b-it:free).
+
+Text-To-Speech (TTS) Settings
+-----------------------------
+- TTS_ENABLED           : Set to true to enable voice output, or false to disable (default: false).
+- TTS_AUTOPLAY          : Automatically plays the generated audio (default: true).
+- TTS_DEFAULT_LANGUAGE  : Default fallback language (eng / vie).
+- TTS_AUDIO_DIR         : Directory where generated MP3s are stored (default: generated_audio).
+- TTS_VOICE_POSITION_ENG: 0-indexed ID of the English voice to use.
+- TTS_VOICE_POSITION_VIE: 0-indexed ID of the Vietnamese voice to use.
+
+Example Configuration:
+
+OPENAI_API_KEY=sk-proj-yourRealOpenAiKeyHere
 OPENAI_API_BASEURL=https://api.openai.com/v1
+OPENAI_API_MODEL=gpt-4o-mini
+
+GEMINI_API_KEY=AIzaSyYourRealGeminiKeyHere
+GEMINI_MODEL=gemini-2.5-flash
+
+OPENROUTER_API_KEY=sk-or-v1-yourRealOpenRouterKeyHere
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_API_MODEL=google/gemma-4-31b-it:free
 
 TTS_ENABLED=true
 TTS_AUTOPLAY=true
@@ -96,16 +120,10 @@ TTS_DEFAULT_LANGUAGE=eng
 TTS_AUDIO_DIR=generated_audio
 TTS_VOICE_POSITION_ENG=0
 TTS_VOICE_POSITION_VIE=0
-
-If the team uses another OpenAI-compatible provider, use the model name and
-base URL supplied by that provider.
 
 Important:
-
-- Do not add quotation marks unless they are part of the actual value.
-- Do not add spaces around the equals sign.
-- Never commit or share the .env file.
-- The repository's .gitignore excludes .env and generated_audio/.
+- Quotes and spaces around environment variables are automatically trimmed/stripped by the python-dotenv parsing utilities.
+- Never commit or share your .env file containing real API keys; it is excluded in .gitignore.
 
 
 5. Run the chatbot
@@ -113,11 +131,11 @@ Important:
 
 macOS/Linux:
 
-python3 test.py
+python3 main.py
 
 Windows:
 
-py test.py
+py main.py
 
 When the prompt "You:" appears, type a question and press Enter.
 
@@ -139,7 +157,7 @@ Type exit or quit to stop the chatbot. Ctrl+C also exits.
 How TTS Works
 -------------
 
-After the assistant prints a text answer, test.py detects whether the answer
+After the assistant prints a text answer, main.py detects whether the answer
 is English or Vietnamese.
 
 - English responses use the voice selected by TTS_VOICE_POSITION_ENG.
@@ -192,7 +210,7 @@ ModuleNotFoundError: No module named 'edge_tts'
     python3 -m pip install -r requirements.txt
 
 Missing environment variables
-    Confirm that .env is in the same directory as test.py and contains
+    Confirm that .env is in the same directory as main.py and contains
     OPENAI_API_KEY, OPENAI_API_MODEL, and OPENAI_API_BASEURL.
 
 Authentication error
@@ -231,4 +249,4 @@ Current Scope
 
 This is the terminal prototype only. The planned Streamlit, PDF ingestion,
 LangChain, Pinecone, and Azure VM features described in plan.md are not yet
-implemented in test.py.
+implemented in main.py.
