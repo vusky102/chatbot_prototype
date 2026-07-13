@@ -9,6 +9,29 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 
+# Import reusable PDF processing utilities
+from functions import extract_images, extract_text_from_pdf
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DEVELOPER GUIDE: How to use Text & Visual Element Extractions programmatically
+# ─────────────────────────────────────────────────────────────────────────────
+# 
+# 1. TEXT EXTRACTION (Removes duplicate page-headers automatically):
+#    text = extract_text_from_pdf("path/to/file.pdf")
+#    print(text)
+#
+# 2. IMAGE & VISUAL ELEMENT EXTRACTION (Saves raster images & crops tables/charts/diagrams using Vision AI):
+#    result = extract_images(
+#        pdf_path="path/to/file.pdf",
+#        output_dir="output",          # base directory to save extracted visual assets
+#        provider=None,                # Auto-detects ('gemini' or 'openai') from env API keys
+#        render_dpi=150,               # DPI resolution rendered for AI bounding-box detection
+#        crop_dpi=300                  # DPI resolution rendered for final cropped high-quality image file
+#    )
+#    print(f"Extracted: {result['embedded_count']} embedded, {result['ai_extracted_count']} detected elements.")
+#    print(f"Assets saved under: {result['output_dir']}")
+# ─────────────────────────────────────────────────────────────────────────────
+
 load_dotenv()
 
 VIETNAMESE_DIACRITICS = set(

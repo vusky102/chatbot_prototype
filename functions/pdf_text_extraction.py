@@ -67,20 +67,41 @@ def format_headings(text):
 def extract_text_from_pdf(pdf_path):
     reader = PdfReader(pdf_path)
     text = ""
+    seen_headers = set()
     
     for page_counter, page in enumerate(reader.pages, 1):
-        # Accumulate text excluding headers (y > 700)
-        parts = []
+        header_parts = []
+        body_parts = []
+        
         def visitor(fragment_text, cm, tm, font_dict, font_size):
             y = tm[5]
-            if y < 700:
-                parts.append(fragment_text)
+            if y >= 700:
+                header_parts.append(fragment_text)
+            else:
+                body_parts.append(fragment_text)
                 
         page.extract_text(visitor_text=visitor)
-        page_text = "".join(parts)
         
-        # Clean spacing
-        page_text = clean_vietnamese_spacing(page_text)
+        # Process header
+        header_text = "".join(header_parts)
+        cleaned_header = clean_vietnamese_spacing(header_text).strip()
+        normalized_header = " ".join(cleaned_header.split())
+        
+        # Check for duplicate headers
+        include_header = False
+        if normalized_header:
+            if normalized_header not in seen_headers:
+                seen_headers.add(normalized_header)
+                include_header = True
+        
+        # Process body
+        body_text = "".join(body_parts)
+        page_text = clean_vietnamese_spacing(body_text)
+        
+        # Prepend header if it's the first time we see it
+        if include_header:
+            cleaned_header_text = clean_vietnamese_spacing(header_text)
+            page_text = cleaned_header_text + "\n" + page_text
         
         # Format headings
         page_text = format_headings(page_text)
@@ -90,6 +111,9 @@ def extract_text_from_pdf(pdf_path):
 
     return text
 
-# public_001 = extract_text_from_pdf("docs/Training_data_GD4/input/Public_001.pdf")
-# with open("docs/Training_data_GD4/output/Public_001/Public_001.txt", "w", encoding="utf-8") as f:
-#     f.write(public_001)
+if __name__ == "__main__":
+    import os
+    os.makedirs("docs/Training_data_GD4/output/Public_035", exist_ok=True)
+    public_035 = extract_text_from_pdf("docs/Training_data_GD4/input/Public_035.pdf")
+    with open("docs/Training_data_GD4/output/Public_035/Public_035.txt", "w", encoding="utf-8") as f:
+        f.write(public_035)
