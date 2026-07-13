@@ -282,3 +282,49 @@ No numerical accuracy or latency threshold is defined yet. A representative eval
  
 - Submit the completed proposal by email to **HieuNT14** and **AnhNM66** for review and scoring.
 - Push the project to the team GitLab repository when it becomes available.
+
+## Thought:
+
+RAG retrieval can be improve by passing result to a summarization pipeline in transformer? (save token) and then pass the summary to question-answering task model?
+
+
+## future code structure
+
+```
+chat_bot_rag/
+│
+├── .env                           # Environment variables (OpenAI, Pinecone keys, passwords)
+├── .gitignore                     # Ignores .env, virtual environments, data/ PDFs, cache
+├── README.md                      # Setup instructions (migrated from readme.txt)
+├── requirements.txt               # Dependencies (streamlit, langchain, pinecone, pypdf)
+│
+├── data/                          # Folder for PDFs (add data/ to .gitignore!)
+│   └── mock_pdfs/                 # Where Hieu's mock PDFs will live locally
+│
+├── src/                           # Main code folder
+│   ├── __init__.py
+│   ├── config.py                  # Loads & validates env vars (e.g., passwords, keys)
+│   │
+│   ├── ingest/                    # Data ingestion pipeline (Admin use)
+│   │   ├── __init__.py
+│   │   ├── parsing.py             # PDF parsing & text extraction (from your functions/)
+│   │   ├── chunking.py            # Handles LangChain splitters (recursive, semantic)
+│   │   └── indexing.py            # Generates embeddings and uploads to Pinecone
+│   │
+│   ├── rag/                       # RAG Pipeline (Query -> Retrieval -> Response)
+│   │   ├── __init__.py
+│   │   ├── retriever.py           # Connects to Pinecone, runs query, does reranking
+│   │   ├── generator.py           # Formats grounding prompt and queries OpenAI Chat Model
+│   │   └── history.py             # In-session memory formatting helper
+│   │
+│   └── ui/                        # Frontend components (Streamlit specific)
+│       ├── __init__.py
+│       ├── auth.py                # Password protection system
+│       └── components.py          # Chat bubbles, sidebar controls, source citations
+│
+├── tests/                         # Unit tests for extraction & retrieval quality
+│   └── ...
+│
+└── app.py                         # Main entrypoint run by Streamlit ("streamlit run app.py")
+
+```
