@@ -12,6 +12,7 @@ import os
 import argparse
 import base64
 import json
+import re
 from pathlib import Path
 import fitz  # PyMuPDF
 from dotenv import load_dotenv
@@ -27,6 +28,45 @@ def clean_env_val(val):
     if val.startswith(('"', "'")) and val.endswith(('"', "'")):
         val = val[1:-1]
     return val.strip()
+
+
+def robust_json_loads(s):
+    """
+    Attempts to parse JSON from a string, repairing common LLM formatting errors
+    such as missing closing square brackets in box_2d list values.
+    """
+    if not s:
+        return {}
+    
+    s = s.strip()
+    
+    # 1. Strip markdown code block wrappers if present
+    if s.startswith("```"):
+        lines = s.splitlines()
+        if len(lines) >= 2:
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            s = "\n".join(lines).strip()
+            
+    # 2. Try parsing directly
+    try:
+        return json.loads(s)
+    except json.JSONDecodeError:
+        pass
+        
+    # 3. Repair mismatched closing bracket for box_2d coordinate arrays
+    # e.g. [ymin, xmin, ymax, xmax} -> [ymin, xmin, ymax, xmax]
+    # We capture the trailing brace so we do not lose the object close token.
+    s = re.sub(
+        r'\[\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*([\}])',
+        r'[\1, \2, \3, \4]\5',
+        s
+    )
+    
+    # Try parsing again
+    return json.loads(s)
 
 
 # ─── AI Provider Setup ───────────────────────────────────────────────────────
@@ -133,7 +173,13 @@ def analyze_page_openai(client, model, png_bytes, img_width, img_height):
         temperature=0.0,
     )
 
-    return json.loads(response.choices[0].message.content)
+    try:
+        return robust_json_loads(response.choices[0].message.content)
+    except Exception as e:
+        print("\n--- DEBUG: RAW OPENAI RESPONSE START ---")
+        print(response.choices[0].message.content)
+        print("--- DEBUG: RAW OPENAI RESPONSE END ---\n")
+        raise e
 
 
 def analyze_page_gemini(client, model, png_bytes, img_width, img_height):
@@ -165,7 +211,13 @@ def analyze_page_gemini(client, model, png_bytes, img_width, img_height):
         ),
     )
 
-    return json.loads(response.text)
+    try:
+        return robust_json_loads(response.text)
+    except Exception as e:
+        print("\n--- DEBUG: RAW GEMINI RESPONSE START ---")
+        print(response.text)
+        print("--- DEBUG: RAW GEMINI RESPONSE END ---\n")
+        raise e
 
 
 # ─── Page Rendering & Cropping ───────────────────────────────────────────────

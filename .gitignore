@@ -3,3 +3,10 @@ generated_audio/
 docs/Training_data_GD4/
 *.pdf
 output/
+
+# Python cache / bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/

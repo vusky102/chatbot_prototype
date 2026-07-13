@@ -56,6 +56,22 @@ LANGDETECT_CODES = {
     "vie": "vie",
 }
 
+# Popular free models available on OpenRouter (as of mid-2026)
+FREE_OPENROUTER_MODELS = [
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "qwen/qwen3-coder:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+    "poolside/laguna-xs-2.1:free",
+    "cohere/north-mini-code:free",
+    "nvidia/nemotron-3.5-content-safety:free",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "liquid/lfm-2.5-1.2b-thinking:free",
+    "liquid/lfm-2.5-1.2b-instruct:free",
+]
+
 KNOWLEDGE_BASE = [
     {
         "source": "Leave Policy",
@@ -194,13 +210,44 @@ def run_tool(name, arguments):
     return f"Unknown tool: {name}"
 
 
-def get_assistant_reply(client, model, messages):
+def get_assistant_reply(client, model, messages, fallback_client=None, fallback_model=None):
+    import time
+    use_fallback = False
+    active_client = client
+    active_model = model
+    max_retries = 3
+
     while True:
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            tools=[RETRIEVE_KNOWLEDGE_TOOL],
-        )
+        response = None
+        for attempt in range(1, max_retries + 1):
+            try:
+                response = active_client.chat.completions.create(
+                    model=active_model,
+                    messages=messages,
+                    tools=[RETRIEVE_KNOWLEDGE_TOOL],
+                )
+                break  # Success!
+            except Exception as error:
+                print(f"\n[Warning] API call failed on {active_model} (attempt {attempt}/{max_retries}): {error}")
+                if attempt < max_retries:
+                    sleep_time = attempt * 2
+                    print(f"Retrying in {sleep_time} seconds...")
+                    time.sleep(sleep_time)
+                else:
+                    if not use_fallback and fallback_client and fallback_model:
+                        print(f"\n[Warning] Primary model failed after {max_retries} attempts.")
+                        print(f"Switching fallback to OpenRouter (model: {fallback_model})...")
+                        active_client = fallback_client
+                        active_model = fallback_model
+                        use_fallback = True
+                        break
+                    else:
+                        print(f"\n[Error] LLM call failed permanently after max retries: {error}")
+                        raise error
+
+        if response is None:
+            continue
+
         message = response.choices[0].message
 
         if not message.tool_calls:
@@ -218,6 +265,8 @@ def get_assistant_reply(client, model, messages):
                     "content": result,
                 }
             )
+
+
 
 
 def get_bool_env(name, default=False):
@@ -368,6 +417,52 @@ def main():
         )
 
     client = OpenAI(api_key=api_key, base_url=base_url)
+
+    # OpenRouter fallback configuration setup
+    openrouter_key = os.getenv("OPENROUTER_API_KEY")
+    openrouter_url = os.getenv("OPENROUTER_BASE_URL")
+    openrouter_model = os.getenv("OPENROUTER_API_MODEL") or os.getenv("OPENROUTER_MODEL")
+
+    fallback_client = None
+    fallback_model = None
+
+    # Handle missing / warning conditions for OpenRouter
+    missing_fallback_vars = []
+    if not openrouter_key:
+        missing_fallback_vars.append("OPENROUTER_API_KEY")
+    if not openrouter_url:
+        missing_fallback_vars.append("OPENROUTER_BASE_URL")
+    if not openrouter_model:
+        missing_fallback_vars.append("OPENROUTER_API_MODEL/OPENROUTER_MODEL")
+
+    if openrouter_key and openrouter_url:
+        if not openrouter_model:
+            # warn that the model is missing and detail the default model being chosen
+            openrouter_model = "meta-llama/llama-3.3-70b-instruct:free"
+            print("\n" + "!" * 80)
+            print(f"[WARNING] Fallback model (OPENROUTER_API_MODEL) was not defined. Defaulting to: {openrouter_model}")
+            print("!" * 80 + "\n")
+        
+        fallback_client = OpenAI(
+            api_key=openrouter_key,
+            base_url=openrouter_url,
+            default_headers={
+                "HTTP-Referer": "https://localhost:3000",
+                "X-Title": "Chatbot Prototype",
+            }
+        )
+        fallback_model = openrouter_model
+        print(f"[Info] OpenRouter fallback configured successfully (model: {fallback_model}).")
+    else:
+        # OpenRouter is completely optional, but we warn the user if it's missing or partially configured
+        print("\n" + "=" * 80)
+        print("[WARNING] OpenRouter fallback configuration is incomplete. Chatbot will run WITHOUT fallback capability.")
+        print(f"Missing variables: {', '.join(missing_fallback_vars)}")
+        print("Available free OpenRouter fallback models for future reference:")
+        for m in FREE_OPENROUTER_MODELS:
+            print(f"  - {m}")
+        print("=" * 80 + "\n")
+
     tts = TextToSpeechRouter()
     system_dict = {
         "role": "system",
@@ -488,7 +583,13 @@ def main():
         messages.append(user_dict)
 
         try:
-            assistant_text = get_assistant_reply(client, model, messages)
+            assistant_text = get_assistant_reply(
+                client,
+                model,
+                messages,
+                fallback_client=fallback_client,
+                fallback_model=fallback_model
+            )
         except Exception as error:
             messages.pop()
             print(f"Error: {error}")
