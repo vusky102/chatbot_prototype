@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
+import networkx as nx
 
 load_dotenv()
 
@@ -161,6 +162,88 @@ def visualize_embeddings_3d(a, b=None):
     plt.show()
 
 
+def visualize_embeddings_graph(a, b=None, distance_threshold=0.8):
+    """
+    Visualize embeddings in a 2D network graph structure based on cosine similarity.
+    
+    Parameters:
+    - a (list of str): Knowledge base text elements.
+    - b (str, optional): Search query text. Defaults to None.
+    - distance_threshold (float): Only draw edges for cosine distance < threshold (smaller is more similar).
+    """
+    if not a:
+        print("Knowledge base list 'a' cannot be empty.")
+        return
+
+    # Compute embeddings
+    kb_embeddings = embedding(a)
+    all_texts = list(a)
+    all_embeddings = list(kb_embeddings)
+
+    has_search = b is not None
+    if has_search:
+        search_emb = embedding([b])[0]
+        # Insert search query at position 0
+        all_texts = [b] + all_texts
+        all_embeddings = [search_emb] + all_embeddings
+
+    # Populate coordinates / distances
+    G = nx.Graph()
+    for text in all_texts:
+        G.add_node(text)
+
+    # Compute pairwise distances
+    n = len(all_texts)
+    for i in range(n):
+        for j in range(i + 1, n):
+            dist = cosine(all_embeddings[i], all_embeddings[j])
+            if dist < distance_threshold:
+                # Add edge. Keep weight as 1 - dist (higher similarity = stronger connection)
+                weight = 1.0 - dist
+                G.add_edge(all_texts[i], all_texts[j], weight=weight, distance=dist)
+
+    # Draw the plot
+    plt.figure(figsize=(12, 10))
+    
+    # Use spring layout where edge weights push nodes together
+    # Use 'weight' as force factor in spring layout
+    pos = nx.spring_layout(G, k=0.3, iterations=50, seed=42)
+
+    # Separate nodes by query vs database
+    if has_search:
+        query_nodes = [b]
+        kb_nodes = [t for t in all_texts if t != b]
+    else:
+        query_nodes = []
+        kb_nodes = list(all_texts)
+
+    # Draw database nodes
+    nx.draw_networkx_nodes(G, pos, nodelist=kb_nodes, node_color='skyblue', node_size=1200, edgecolors='darkblue', label='Knowledge Base')
+    
+    # Draw query nodes
+    if query_nodes:
+        nx.draw_networkx_nodes(G, pos, nodelist=query_nodes, node_color='salmon', node_shape='p', node_size=1800, edgecolors='red', label='Search Query')
+
+    # Draw node labels
+    nx.draw_networkx_labels(G, pos, font_size=9, font_family='sans-serif', font_weight='bold')
+
+    # Draw edges with varying thicknesses based on weight
+    if G.edges():
+        edges = G.edges(data=True)
+        weights = [data['weight'] * 5 for u, v, data in edges]
+        nx.draw_networkx_edges(G, pos, width=weights, edge_color='gray', alpha=0.6)
+
+        # Draw edge labels (displaying cosine distance)
+        edge_labels = {(u, v): f"{data['distance']:.2f}" for u, v, data in G.edges(data=True)}
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8, font_color='red')
+
+    plt.title(f"Semantic Connection Graph (Cosine Distance Threshold < {distance_threshold})", fontsize=14, fontweight='bold')
+    plt.legend(scatterpoints=1, loc='upper left')
+    plt.axis('off')
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == "__main__":
     with open("docs/Training_data_GD4/output/Public_035/Public_035.txt", "r", encoding="utf-8") as f:
         text = f.read()
@@ -182,6 +265,10 @@ if __name__ == "__main__":
     # Visualise the relationships in 3D
     visualize_embeddings_3d(kb)
     visualize_embeddings_3d(kb, search_text)
+
+    # Visualise the relationships in networkx graph layout
+    visualize_embeddings_graph(kb)
+    visualize_embeddings_graph(kb, search_text)
     
     min_distance = np.argmin(distances)
     print(distances)
