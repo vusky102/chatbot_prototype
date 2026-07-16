@@ -5,3 +5,6 @@ langdetect
 pymupdf>=1.24.0
 google-genai>=1.0.0
 tenacity>=9.1.4
+chromadb>=1.0.0
+imagehash>=4.3.0
+Pillow>=10.0.0
