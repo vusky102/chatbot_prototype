@@ -7,7 +7,8 @@ from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, RateLimitError, APIError
+from tenacity import retry, wait_random_exponential, stop_after_attempt, retry_if_exception_type
 
 # Import reusable PDF processing utilities
 from functions import extract_images, extract_text_from_pdf
@@ -210,43 +211,57 @@ def run_tool(name, arguments):
     return f"Unknown tool: {name}"
 
 
+def before_sleep_log(retry_state):
+    kwargs = retry_state.kwargs
+    args = retry_state.args
+    model_name = kwargs.get("model") or (args[1] if len(args) > 1 else "Unknown Model")
+    error = retry_state.outcome.exception()
+    attempt = retry_state.attempt_number
+    sleep_time = getattr(retry_state, "idle_for", 0)
+    print(f"\n[Warning] API call failed on {model_name} (attempt {attempt}/3): {error}")
+    if sleep_time > 0:
+        print(f"Retrying in {sleep_time:.2f} seconds (exponential backoff)...")
+
+
+@retry(
+    retry=retry_if_exception_type((RateLimitError, APIError)),
+    wait=wait_random_exponential(min=1, max=10),
+    stop=stop_after_attempt(3),
+    before_sleep=before_sleep_log,
+    reraise=True
+)
+def call_chat_completion(client, model, messages, tools):
+    return client.chat.completions.create(
+        model=model,
+        messages=messages,
+        tools=tools,
+    )
+
+
 def get_assistant_reply(client, model, messages, fallback_client=None, fallback_model=None):
-    import time
     use_fallback = False
     active_client = client
     active_model = model
-    max_retries = 3
 
     while True:
-        response = None
-        for attempt in range(1, max_retries + 1):
-            try:
-                response = active_client.chat.completions.create(
-                    model=active_model,
-                    messages=messages,
-                    tools=[RETRIEVE_KNOWLEDGE_TOOL],
-                )
-                break  # Success!
-            except Exception as error:
-                print(f"\n[Warning] API call failed on {active_model} (attempt {attempt}/{max_retries}): {error}")
-                if attempt < max_retries:
-                    sleep_time = attempt * 2
-                    print(f"Retrying in {sleep_time} seconds...")
-                    time.sleep(sleep_time)
-                else:
-                    if not use_fallback and fallback_client and fallback_model:
-                        print(f"\n[Warning] Primary model failed after {max_retries} attempts.")
-                        print(f"Switching fallback to OpenRouter (model: {fallback_model})...")
-                        active_client = fallback_client
-                        active_model = fallback_model
-                        use_fallback = True
-                        break
-                    else:
-                        print(f"\n[Error] LLM call failed permanently after max retries: {error}")
-                        raise error
-
-        if response is None:
-            continue
+        try:
+            response = call_chat_completion(
+                client=active_client,
+                model=active_model,
+                messages=messages,
+                tools=[RETRIEVE_KNOWLEDGE_TOOL],
+            )
+        except Exception as error:
+            if not use_fallback and fallback_client and fallback_model:
+                print(f"\n[Warning] Primary model call failed: {error}")
+                print(f"Switching fallback to OpenRouter (model: {fallback_model})...")
+                active_client = fallback_client
+                active_model = fallback_model
+                use_fallback = True
+                continue
+            else:
+                print(f"\n[Error] LLM call failed permanently: {error}")
+                raise error
 
         message = response.choices[0].message
 
@@ -397,7 +412,21 @@ class TextToSpeechRouter:
                 return
  
             if system == "Windows":
-                os.startfile(path)
+                # winsound is built-in but only plays .wav files, whereas edge-tts outputs .mp3.
+                # To play MP3s in the background without any popup windows, we use Windows MCI (winmm.dll)
+                # via ctypes, and fall back to winsound.PlaySound or default os.startfile.
+                try:
+                    import ctypes
+                    path_str = str(Path(path).resolve())
+                    ctypes.windll.winmm.mciSendStringW(f'open "{path_str}" type mpegvideo alias mymp3', None, 0, 0)
+                    ctypes.windll.winmm.mciSendStringW('play mymp3 wait', None, 0, 0)
+                    ctypes.windll.winmm.mciSendStringW('close mymp3', None, 0, 0)
+                except Exception:
+                    try:
+                        import winsound
+                        winsound.PlaySound(path, winsound.SND_FILENAME)
+                    except Exception:
+                        os.startfile(path)
                 return
  
             print(f"TTS audio saved: {output_path}")
