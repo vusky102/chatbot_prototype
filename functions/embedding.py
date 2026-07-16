@@ -23,6 +23,16 @@ def embedding(texts):
     response_dict = response.model_dump()
     return [data['embedding'] for data in response_dict['data']]
 
+def find_closest_embeddings(query_vector, embeddings, n=3):
+    query_vector = embedding([query_vector])[0]
+    embeddings = embedding(embeddings)
+    distances = []
+    for index, emb in enumerate(embeddings):
+        dist = cosine(query_vector, emb)
+        distances.append({"distance": dist, "index": index})
+    distances.sort(key=lambda x: x["distance"])
+    return distances[:n]
+
 
 def visualize_embeddings(a, b=None):
     """
@@ -250,27 +260,31 @@ if __name__ == "__main__":
 
     #datacamp example
     search_text = "iphone 16 pro"
-    search_embedding = embedding([search_text])[0]
+    #search_embedding = embedding([search_text])[0]
 
     kb= ["technology","biology","chemistry","physics","math","chip","apple","mobile","essential stuff","test"]
-    kb_embedding = embedding(kb)
+    #kb_embedding = embedding(kb)
 
-    distances = [cosine(search_embedding, kb_emb) for kb_emb in kb_embedding]
+    #distances = [cosine(search_embedding, kb_emb) for kb_emb in kb_embedding]
     
 
     # Visualise the relationships using the new function
-    visualize_embeddings(kb)
-    visualize_embeddings(kb, search_text)
+    #visualize_embeddings(kb)
+    #   visualize_embeddings(kb, search_text)
 
     # Visualise the relationships in 3D
-    visualize_embeddings_3d(kb)
-    visualize_embeddings_3d(kb, search_text)
+    #visualize_embeddings_3d(kb)
+    #visualize_embeddings_3d(kb, search_text)
 
     # Visualise the relationships in networkx graph layout
-    visualize_embeddings_graph(kb)
-    visualize_embeddings_graph(kb, search_text)
+    #visualize_embeddings_graph(kb)
+    #visualize_embeddings_graph(kb, search_text)
     
-    min_distance = np.argmin(distances)
-    print(distances)
-    print(min_distance)
-    print(kb[min_distance])
+    #find n closest
+    n_closest = find_closest_embeddings(search_text, kb, n=3)
+    print(n_closest)
+
+    #min_distance = np.argmin(distances)
+    #print(distances)
+    #print(min_distance)
+    #print(kb[min_distance])
