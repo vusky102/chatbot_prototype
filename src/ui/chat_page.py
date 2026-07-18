@@ -53,12 +53,11 @@ def _play_mp3_in_browser(path: Path, cache_key: str) -> None:
     nonce = time.time_ns()
     st.html(
         f"""
+        <audio autoplay src="data:audio/mpeg;base64,{payload}" style="display:none;"></audio>
         <script>
         (function() {{
           window.__ttsAudio = window.__ttsAudio || {{}};
           window.__ttsAudio[{key_js}] = {payload_js};
-          const audio = new Audio("data:audio/mpeg;base64," + {payload_js});
-          audio.play().catch(function() {{}});
         }})();
         </script>
         <!-- tts-play {nonce} -->
@@ -767,11 +766,21 @@ def render_chat_page(service: RAGService) -> None:
                     image_mime=message.get("image_mime"),
                 )
             else:
+                msg_id = int(message.get("id") or (index + 1))
                 _render_assistant_message(
                     str(message["content"]),
                     sources=list(message.get("sources") or []),
-                    message_id=int(message.get("id") or (index + 1)),
+                    message_id=msg_id,
                 )
+                if message.pop("autoplay", False):
+                    tts = _get_tts()
+                    if tts.enabled and tts.autoplay:
+                        cache_key = f"assistant_{msg_id}"
+                        try:
+                            path = _synthesize_cached(str(message["content"]), cache_key)
+                            _play_mp3_in_browser(path, cache_key)
+                        except Exception as exc:
+                            st.caption(f"TTS Autoplay Error: {exc}")
         _inject_tts_glyph_bridge()
 
     pending_text = st.session_state.get("pending_question")
@@ -878,6 +887,7 @@ def render_chat_page(service: RAGService) -> None:
             "content": answer,
             "sources": sources,
             "id": message_id,
+            "autoplay": True,
         }
     )
     st.session_state.pop("pending_question", None)
