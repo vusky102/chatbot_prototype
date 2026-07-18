@@ -522,19 +522,7 @@ body:has([data-testid="stSidebarCollapsedControl"]) .chat-empty-hero,
 .block-container:has(.admin-page-marker) .stButton > button[kind="primary"],
 .block-container:has(.admin-page-marker) .stButton > button[data-testid="stBaseButton-primary"],
 .block-container:has(.admin-page-marker) .stButton > button[kind="primary"] :is(span, p, div),
-.block-container:has(.admin-page-marker) .stButton > button[data-testid="stBaseButton-primary"] :is(span, p, div),
-.block-container:has(.admin-page-marker) :is(
-  [data-testid="stAlert"],
-  [data-testid="stSuccess"],
-  [data-testid="stError"],
-  [data-testid="stException"]
-),
-.block-container:has(.admin-page-marker) :is(
-  [data-testid="stAlert"],
-  [data-testid="stSuccess"],
-  [data-testid="stError"],
-  [data-testid="stException"]
-) :is(p, span, div, code, pre, label, small) {
+.block-container:has(.admin-page-marker) .stButton > button[data-testid="stBaseButton-primary"] :is(span, p, div) {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   opacity: 1 !important;
@@ -557,19 +545,6 @@ body:has([data-testid="stSidebarCollapsedControl"]) .chat-empty-hero,
   border-color: #0842a0 !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
-}
-
-/* Light alert surfaces keep dark text */
-.block-container:has(.admin-page-marker) :is(
-  [data-testid="stInfo"],
-  [data-testid="stWarning"]
-),
-.block-container:has(.admin-page-marker) :is(
-  [data-testid="stInfo"],
-  [data-testid="stWarning"]
-) :is(p, span, div, code, pre, label, small) {
-  color: #202124 !important;
-  -webkit-text-fill-color: #202124 !important;
 }
 
 /* Admin toggles — off-state track/thumb must contrast with page bg (#f8f9fa) */
@@ -613,6 +588,28 @@ body:has([data-testid="stSidebarCollapsedControl"]) .chat-empty-hero,
 [data-testid="stSidebar"] {
   background: var(--md-sys-color-surface-container) !important;
   border-right: 1px solid var(--md-sys-color-outline) !important;
+}
+
+/* Ensure sidebar inputs are styled correctly in light mode */
+[data-testid="stSidebar"] :is([data-testid="stSelectbox"], [data-testid="stMultiSelect"]) div:has(> input) {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  border: 1px solid #dadce0 !important;
+  border-radius: 10px !important;
+}
+[data-testid="stSidebar"] :is([data-testid="stSelectbox"], [data-testid="stMultiSelect"]) input {
+  background-color: transparent !important;
+  color: #202124 !important;
+  -webkit-text-fill-color: #202124 !important;
+  caret-color: #202124 !important;
+}
+[data-testid="stSidebar"] :is([data-testid="stSelectbox"], [data-testid="stMultiSelect"]) svg {
+  fill: #5f6368 !important;
+}
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"],
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+  color: #202124 !important;
+  -webkit-text-fill-color: #202124 !important;
 }
 
 [data-testid="stSidebar"] > div:first-child {

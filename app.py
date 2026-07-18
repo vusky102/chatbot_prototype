@@ -48,39 +48,25 @@ def main() -> None:
 
         page = st.session_state.sidebar_page
 
+        def _nav_to(p: str):
+            st.session_state.sidebar_page = p
+
+        def _new_chat():
+            st.session_state.messages = []
+            st.session_state.pop("pending_question", None)
+            st.session_state.pop("dock_composer_animation", None)
+
         if page == "Chat":
-            if st.button(
-
-                "New chat",
-                key="nav_new_chat",
-                width="stretch",
-                type="primary",
-            ):
-                st.session_state.messages = []
-                st.session_state.pop("pending_question", None)
-                st.session_state.pop("dock_composer_animation", None)
-                st.rerun()
-
-            if st.button("Admin", key="nav_to_admin", width="stretch"):
-                st.session_state.sidebar_page = "Admin"
-                st.rerun()
-
-            if st.button("Visualize", key="nav_to_visualize", width="stretch"):
-                st.session_state.sidebar_page = "Visualize"
-                st.rerun()
+            st.button("New chat", key="nav_new_chat", width="stretch", type="primary", on_click=_new_chat)
+            st.button("Admin", key="nav_to_admin", width="stretch", on_click=_nav_to, args=("Admin",))
+            st.button("Visualize", key="nav_to_visualize", width="stretch", on_click=_nav_to, args=("Visualize",))
 
         else:
-            if st.button("Chat", key="nav_to_chat", width="stretch"):
-                st.session_state.sidebar_page = "Chat"
-                st.rerun()
+            st.button("Chat", key="nav_to_chat", width="stretch", on_click=_nav_to, args=("Chat",))
             if page != "Admin":
-                if st.button("Admin", key="nav_to_admin", width="stretch"):
-                    st.session_state.sidebar_page = "Admin"
-                    st.rerun()
+                st.button("Admin", key="nav_to_admin", width="stretch", on_click=_nav_to, args=("Admin",))
             if page != "Visualize":
-                if st.button("Visualize", key="nav_to_visualize", width="stretch"):
-                    st.session_state.sidebar_page = "Visualize"
-                    st.rerun()
+                st.button("Visualize", key="nav_to_visualize", width="stretch", on_click=_nav_to, args=("Visualize",))
 
 
 
