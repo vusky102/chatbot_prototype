@@ -1,8 +1,15 @@
+# Secrets
 .env
+
+# Generated / runtime
 generated_audio/
-docs/Training_data_GD4/
-*.pdf
 output/
+docs/Training_data_GD4/
+
+# Uploaded / test media
+*.pdf
+*.png
+*.jpg
 
 # Python cache / bytecode
 __pycache__/
@@ -10,3 +17,16 @@ __pycache__/
 *.pyo
 *.pyd
 .pytest_cache/
+
+# Debug / scratch files
+*.txt
+!requirements.txt
+!readme.txt
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+
+# Agent / Gemini cache
+.gemini/

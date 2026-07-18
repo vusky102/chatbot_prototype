@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.ui.admin_page import render_admin_page
 from src.ui.chat_page import render_chat_page
+from src.ui.visualize_page import render_visualize_page
 from src.ui.rag_session import get_base_settings, get_rag_service
 from src.ui.styles import inject_styles
 from src.utils.model_scanner import get_available_models
@@ -49,6 +50,7 @@ def main() -> None:
 
         if page == "Chat":
             if st.button(
+
                 "New chat",
                 key="nav_new_chat",
                 width="stretch",
@@ -62,10 +64,24 @@ def main() -> None:
             if st.button("Admin", key="nav_to_admin", width="stretch"):
                 st.session_state.sidebar_page = "Admin"
                 st.rerun()
+
+            if st.button("Visualize", key="nav_to_visualize", width="stretch"):
+                st.session_state.sidebar_page = "Visualize"
+                st.rerun()
+
         else:
             if st.button("Chat", key="nav_to_chat", width="stretch"):
                 st.session_state.sidebar_page = "Chat"
                 st.rerun()
+            if page != "Admin":
+                if st.button("Admin", key="nav_to_admin", width="stretch"):
+                    st.session_state.sidebar_page = "Admin"
+                    st.rerun()
+            if page != "Visualize":
+                if st.button("Visualize", key="nav_to_visualize", width="stretch"):
+                    st.session_state.sidebar_page = "Visualize"
+                    st.rerun()
+
 
 
         st.segmented_control(
@@ -130,8 +146,11 @@ def main() -> None:
 
     if page == "Chat":
         render_chat_page(service)
+    elif page == "Visualize":
+        render_visualize_page(service)
     else:
         render_admin_page(service, settings)
+
 
 
 if __name__ == "__main__":

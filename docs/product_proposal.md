@@ -216,29 +216,36 @@ The exact VM specification, network configuration, and OpenAI/Pinecone configura
  
 ### Completed
  
-- Terminal-based chatbot prototype.
+- Terminal-based chatbot prototype (main.py).
 - OpenAI-compatible API integration through environment configuration.
-- Internal-assistant system role and response instructions.
+- Internal-assistant system role with strict grounding and citation instructions.
 - In-session user and assistant message history.
-- Prototype in-memory knowledge base with keyword matching.
- 
-The keyword matcher is an early retrieval prototype. It is not yet a Pinecone-based RAG implementation.
+- Streamlit web UI with Chat, Admin, and Visualize pages.
+- Premium dark/light/system theme with glassmorphism styling.
+- PDF ingestion pipeline (text + image extraction with Gemini captioning).
+- Heading-aware and recursive document chunking.
+- OpenAI embedding generation (text-embedding-3-small).
+- Pinecone vector indexing with dotproduct metric.
+- Hybrid search (dense embeddings + BM25 sparse keywords via pinecone-text).
+- Embedding deduplication with configurable cosine threshold.
+- LangChain RAG pipeline (retriever, grounded generator, tools).
+- Source citation display with document name, page, and heading.
+- Image-based retrieval via perceptual hashing (aHash + Hamming distance).
+- Visual captioning for uploaded images to enhance semantic retrieval.
+- Multi-provider model selection (OpenAI / Gemini / OpenRouter).
+- Interactive 3D PCA, 2D t-SNE, and Network Graph embedding visualizations.
+- Real-time terminal-style ingestion progress logs.
+- Edge TTS voice output with English/Vietnamese language detection.
  
 ### In Progress
  
-- Streamlit user interface.
-- PDF ingestion and processing.
-- OpenAI embedding integration.
-- Pinecone indexing and semantic retrieval.
-- LangChain RAG workflow.
-- Source citation display.
-- Streamlit password protection.
 - Azure VM test deployment.
+- Streamlit password protection.
+- Retrieval quality evaluation against reference question set.
  
 ### Blockers
  
-- The team is waiting for Hieu to provide mock PDF documents for ingestion, retrieval testing, and the final demo.
-- Exact OpenAI model IDs, Pinecone index settings, and Azure VM specifications still need to be finalized during implementation.
+- Exact Azure VM specifications still need to be finalized during deployment.
  
 ## Success Criteria
  
@@ -288,43 +295,62 @@ No numerical accuracy or latency threshold is defined yet. A representative eval
 RAG retrieval can be improve by passing result to a summarization pipeline in transformer? (save token) and then pass the summary to question-answering task model?
 
 
-## future code structure
+## Actual Code Structure
 
 ```
 chat_bot_rag/
 │
-├── .env                           # Environment variables (OpenAI, Pinecone keys, passwords)
-├── .gitignore                     # Ignores .env, virtual environments, data/ PDFs, cache
-├── README.md                      # Setup instructions (migrated from readme.txt)
-├── requirements.txt               # Dependencies (streamlit, langchain, pinecone, pypdf)
+├── .env                           # Environment variables (API keys, settings)
+├── .env.example                   # Template with all supported env vars
+├── .gitignore                     # Ignores .env, cache, output, media files
+├── readme.txt                     # Full setup and usage documentation
+├── requirements.txt               # All Python dependencies (organized by group)
 │
-├── data/                          # Folder for PDFs (add data/ to .gitignore!)
-│   └── mock_pdfs/                 # Where Hieu's mock PDFs will live locally
+├── app.py                         # Streamlit entry point (sidebar nav, routing)
+├── main.py                        # Legacy terminal chatbot prototype
 │
-├── src/                           # Main code folder
+├── docs/                          # Project documentation
+│   └── product_proposal.md        # This file
+│
+├── src/                           # Main application code
 │   ├── __init__.py
-│   ├── config.py                  # Loads & validates env vars (e.g., passwords, keys)
+│   ├── config.py                  # Settings dataclass from .env
+│   ├── models.py                  # DocumentChunk, SearchResult data models
+│   ├── vector_store.py            # Pinecone SDK wrapper (hybrid dense+BM25)
+│   ├── tts.py                     # Edge TTS voice output service
 │   │
-│   ├── ingest/                    # Data ingestion pipeline (Admin use)
-│   │   ├── __init__.py
-│   │   ├── parsing.py             # PDF parsing & text extraction (from your functions/)
-│   │   ├── chunking.py            # Handles LangChain splitters (recursive, semantic)
-│   │   └── indexing.py            # Generates embeddings and uploads to Pinecone
+│   ├── ingest/                    # PDF ingestion pipeline
+│   │   ├── pipeline.py            # Orchestrator: parse → chunk → embed → upsert
+│   │   ├── pdf_text_extraction.py # PyMuPDF/pypdf text extraction
+│   │   ├── image_extraction.py    # Visual element extraction from PDFs
+│   │   ├── visual_caption.py      # Gemini image-to-text captioning
+│   │   ├── chunking.py            # Heading-aware + recursive splitters
+│   │   └── ahash.py               # Average perceptual hash for images
 │   │
-│   ├── rag/                       # RAG Pipeline (Query -> Retrieval -> Response)
-│   │   ├── __init__.py
-│   │   ├── retriever.py           # Connects to Pinecone, runs query, does reranking
-│   │   ├── generator.py           # Formats grounding prompt and queries OpenAI Chat Model
-│   │   └── history.py             # In-session memory formatting helper
+│   ├── lc/                        # LangChain integration layer
+│   │   ├── chain.py               # Grounded answer generator (LLM chain)
+│   │   ├── retriever.py           # LangChain retriever + dedup logic
+│   │   ├── vectorstore.py         # LangChain VectorStore ↔ Pinecone adapter
+│   │   ├── embeddings.py          # Embedding model builder
+│   │   ├── splitters.py           # LangChain text splitter wrappers
+│   │   ├── documents.py           # Document ↔ SearchResult converters
+│   │   └── tools.py               # LangChain tool definitions
 │   │
-│   └── ui/                        # Frontend components (Streamlit specific)
-│       ├── __init__.py
-│       ├── auth.py                # Password protection system
-│       └── components.py          # Chat bubbles, sidebar controls, source citations
+│   ├── rag/                       # RAG service facade
+│   │   ├── service.py             # RAGService: retrieve + answer + image search
+│   │   └── retriever.py           # Context formatting + dedup utilities
+│   │
+│   ├── ui/                        # Streamlit pages & styling
+│   │   ├── chat_page.py           # Chat interface (text + image upload)
+│   │   ├── admin_page.py          # PDF ingestion, index stats, source mgmt
+│   │   ├── visualize_page.py      # 3D PCA, 2D t-SNE, Network Graph
+│   │   ├── styles.py              # Premium CSS theming (glassmorphism)
+│   │   ├── tuning.py              # RAG parameter tuning sidebar
+│   │   └── rag_session.py         # Cached session initialization
+│   │
+│   └── utils/
+│       └── model_scanner.py       # Multi-provider model discovery
 │
-├── tests/                         # Unit tests for extraction & retrieval quality
-│   └── ...
-│
-└── app.py                         # Main entrypoint run by Streamlit ("streamlit run app.py")
-
+└── test/                          # Tests
+    └── test_image_extract.py      # Image extraction test
 ```

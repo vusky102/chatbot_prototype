@@ -1,252 +1,217 @@
-RAG Chatbot - Terminal Prototype
-================================
+RAG Chatbot — Knowledge Assistant
+====================================
 
-This repository contains a terminal chatbot in main.py.
+A web-based internal assistant powered by Retrieval-Augmented Generation (RAG).
+It ingests approved PDF documents, indexes them in Pinecone, and generates
+grounded answers with source citations using OpenAI-compatible models.
 
-The chatbot:
+The project includes:
+- Streamlit web UI with Chat, Admin, and Visualize pages
+- PDF ingestion pipeline with image extraction and visual captioning
+- Hybrid search (dense embeddings + BM25 sparse keywords via Pinecone)
+- Embedding deduplication with cosine similarity
+- Multi-provider model selection (OpenAI / Gemini / OpenRouter)
+- Interactive 3D/2D embedding visualizations (Plotly + streamlit-agraph)
+- Image-based retrieval via perceptual hashing (aHash)
+- Edge TTS voice output with language detection
+- LangChain-based RAG pipeline with strict grounding prompt
 
-- Uses an OpenAI-compatible Chat Completions API for text answers.
-- Keeps conversation history for the current terminal session.
-- Retrieves answers from a small in-memory company knowledge base.
-- Prints the assistant response as text.
-- Converts each assistant response to speech with Microsoft Edge's online TTS
-  service through the edge-tts Python package.
-- Routes English and Vietnamese audio to configurable Microsoft neural voices.
-- Autoplays generated audio on macOS with afplay.
+
+Architecture
+------------
+
+  app.py                       Streamlit entry point
+  src/
+    config.py                  Environment-driven settings (dataclass)
+    models.py                  Data models (DocumentChunk, SearchResult)
+    vector_store.py            Native Pinecone SDK wrapper (hybrid search)
+    tts.py                     Edge TTS text-to-speech service
+
+    ingest/                    PDF ingestion pipeline
+      pipeline.py              Orchestrator: parse → chunk → embed → upsert
+      pdf_text_extraction.py   PyMuPDF / pypdf text extractor
+      image_extraction.py      Visual element extractor (Gemini captioning)
+      visual_caption.py        Image-to-text captioning service
+      chunking.py              Heading-aware + recursive text splitters
+      ahash.py                 Average perceptual hash for images
+
+    lc/                        LangChain integration layer
+      chain.py                 Grounded answer generator (LLM chain)
+      retriever.py             LangChain retriever + dedup logic
+      vectorstore.py           LangChain VectorStore adapter over Pinecone SDK
+      embeddings.py            Embedding model builder
+      splitters.py             LangChain text splitter wrappers
+      documents.py             Document ↔ SearchResult converters
+      tools.py                 LangChain tool definitions
+
+    rag/                       RAG service facade
+      service.py               RAGService: retrieve + answer + image search
+      retriever.py             Context formatting + dedup utilities
+
+    ui/                        Streamlit pages
+      chat_page.py             Chat interface with image upload/paste
+      admin_page.py            PDF ingestion, index management, stats
+      visualize_page.py        3D PCA, 2D t-SNE, and Network Graph
+      styles.py                CSS injection for premium UI theming
+      tuning.py                RAG parameter tuning sidebar
+      rag_session.py           Cached session initialization
+
+    utils/
+      model_scanner.py         Multi-provider model discovery
 
 
 Prerequisites
 -------------
 
-- Python 3.9 or newer
+- Python 3.10 or newer
 - pip
-- macOS or Windows for automatic audio playback
-- An API key for OpenAI or another OpenAI-compatible API
-- The API base URL and model name supplied by your API provider
-- Internet access whenever speech is generated with Edge TTS
-
-Note:
-
-The edge-tts package does not require a Microsoft API key or local model
-downloads. It is an unofficial client for Microsoft Edge's online speech
-service, so synthesis depends on that service and an active internet
-connection.
+- An OpenAI-compatible API key (embeddings + chat)
+- A Pinecone API key with a serverless index
+- (Optional) Gemini API key for visual captioning
+- (Optional) OpenRouter API key for fallback/free models
+- Internet access for Edge TTS voice synthesis
 
 
-1. Open a terminal in the project directory
--------------------------------------------
+Quick Start
+-----------
 
-cd /path/to/chatbot_prototype
+1. Clone the repository and enter the project directory.
 
+2. Create and activate a virtual environment:
 
-2. Create and activate a virtual environment
---------------------------------------------
+   Windows PowerShell:
+     py -m venv .venv
+     .venv\Scripts\Activate.ps1
 
-macOS/Linux:
+   macOS / Linux:
+     python3 -m venv .venv
+     source .venv/bin/activate
 
-python3 -m venv .venv
-source .venv/bin/activate
+3. Install dependencies:
 
-Windows PowerShell:
+     pip install -r requirements.txt
 
-py -m venv .venv
-.venv\Scripts\Activate.ps1
+4. Create a .env file from the template:
 
+     copy .env.example .env          # Windows
+     cp .env.example .env            # macOS / Linux
 
-3. Install the dependencies
----------------------------
+   Fill in at minimum:
+     - OPENAI_API_KEY
+     - PINECONE_API_KEY
 
-macOS/Linux:
+5. Run the Streamlit app:
 
-python3 -m pip install -r requirements.txt
+     python -m streamlit run app.py
 
-Windows:
-
-py -m pip install -r requirements.txt
-
-Installed packages include the OpenAI client, python-dotenv, edge-tts, and
-langdetect.
-
-
-4. Create the local .env file
------------------------------
-
-Create a file named .env in the same directory as main.py. This file contains private API keys and configuration settings for the LLM providers, vision engines, fallback client, and Text-to-Speech system.
-
-Here is a schema of all supported environment variables:
-
-Primary OpenAI-Compatible Client
---------------------------------
-- OPENAI_API_KEY        : The API Key for your primary chat model (e.g. OpenAI or a proxy portal).
-- OPENAI_API_BASEURL    : The base URL of the primary API endpoint (e.g., https://api.openai.com/v1).
-- OPENAI_API_MODEL      : The model name to use for standard interaction (e.g., GPT-4o-mini).
-
-Vision AI API Client (Used for PDF visual elements / image extraction)
----------------------------------------------------------------------
-- GEMINI_API_KEY        : Google Gemini API Key (recommended backend for layout analysis).
-- GEMINI_MODEL          : Model name for layout analysis (defaults to gemini-2.5-flash).
-
-Fallback OpenRouter Client (Configured automatically if primary fails)
-----------------------------------------------------------------------
-- OPENROUTER_API_KEY    : OpenRouter API key for fallback operations.
-- OPENROUTER_BASE_URL   : The OpenRouter endpoint (typically https://openrouter.ai/api/v1).
-- OPENROUTER_API_MODEL  : The fallback model name (e.g. google/gemma-4-31b-it:free).
-
-Text-To-Speech (TTS) Settings
------------------------------
-- TTS_ENABLED           : Set to true to enable voice output, or false to disable (default: false).
-- TTS_AUTOPLAY          : Automatically plays the generated audio (default: true).
-- TTS_DEFAULT_LANGUAGE  : Default fallback language (eng / vie).
-- TTS_AUDIO_DIR         : Directory where generated MP3s are stored (default: generated_audio).
-- TTS_VOICE_POSITION_ENG: 0-indexed ID of the English voice to use.
-- TTS_VOICE_POSITION_VIE: 0-indexed ID of the Vietnamese voice to use.
-
-Example Configuration:
-
-OPENAI_API_KEY=sk-proj-yourRealOpenAiKeyHere
-OPENAI_API_BASEURL=https://api.openai.com/v1
-OPENAI_API_MODEL=gpt-4o-mini
-
-GEMINI_API_KEY=AIzaSyYourRealGeminiKeyHere
-GEMINI_MODEL=gemini-2.5-flash
-
-OPENROUTER_API_KEY=sk-or-v1-yourRealOpenRouterKeyHere
-OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-OPENROUTER_API_MODEL=google/gemma-4-31b-it:free
-
-TTS_ENABLED=true
-TTS_AUTOPLAY=true
-TTS_DEFAULT_LANGUAGE=eng
-TTS_AUDIO_DIR=generated_audio
-TTS_VOICE_POSITION_ENG=0
-TTS_VOICE_POSITION_VIE=0
-
-Important:
-- Quotes and spaces around environment variables are automatically trimmed/stripped by the python-dotenv parsing utilities.
-- Never commit or share your .env file containing real API keys; it is excluded in .gitignore.
+   Open http://localhost:8501 in your browser.
 
 
-5. Run the chatbot
-------------------
+Environment Variables
+---------------------
 
-macOS/Linux:
+See .env.example for all supported settings. Key groups:
 
-python3 main.py
+  Primary OpenAI-Compatible Client
+    OPENAI_API_KEY, OPENAI_API_BASEURL, OPENAI_API_MODEL
 
-Windows:
+  Embedding Configuration
+    OPENAI_EMBEDDING_API_KEY, OPENAI_EMBEDDING_BASEURL,
+    OPENAI_EMBEDDING_MODEL, OPENAI_EMBEDDING_DIMENSION
 
-py main.py
+  Pinecone Vector Database
+    PINECONE_API_KEY, PINECONE_INDEX_NAME, PINECONE_NAMESPACE,
+    PINECONE_CLOUD, PINECONE_REGION
 
-When the prompt "You:" appears, type a question and press Enter.
+  RAG Pipeline Tuning
+    RAG_CHUNK_SIZE, RAG_CHUNK_OVERLAP, RAG_CHUNK_STRATEGY,
+    RAG_RETRIEVAL_TOP_K, RAG_RETRIEVAL_SCORE_THRESHOLD,
+    RAG_RETRIEVAL_DEDUP_ENABLED, RAG_RETRIEVAL_DEDUP_THRESHOLD,
+    RAG_RETRIEVAL_CANDIDATE_MULTIPLIER, RAG_RETRIEVAL_HYBRID_ALPHA
 
-Example English questions:
+  Visual Extraction & Captioning
+    RAG_VISUAL_PROVIDER, RAG_VISUAL_OUTPUT_DIR,
+    GEMINI_API_KEY, GEMINI_MODEL
 
-- How many annual leave days do employees receive?
-- What should I do if my account is locked?
-- What must a new employee complete?
+  OpenRouter Fallback
+    OPENROUTER_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_API_MODEL
 
-Example Vietnamese questions:
-
-- Nhan vien co bao nhieu ngay nghi phep moi nam?
-- Nhân viên có bao nhiêu ngày nghỉ phép mỗi năm?
-- Tôi nên làm gì nếu tài khoản bị khóa?
-
-Type exit or quit to stop the chatbot. Ctrl+C also exits.
+  Text-To-Speech
+    TTS_ENABLED, TTS_AUTOPLAY, TTS_DEFAULT_LANGUAGE,
+    TTS_AUDIO_DIR, TTS_VOICE_POSITION_ENG, TTS_VOICE_POSITION_VIE
 
 
-How TTS Works
--------------
+Streamlit Pages
+---------------
 
-After the assistant prints a text answer, main.py detects whether the answer
-is English or Vietnamese.
+  Chat    — Ask questions against the indexed knowledge base.
+            Supports text input, image upload/paste, and voice output.
+            Answers include source citations with document name and page.
 
-- English responses use the voice selected by TTS_VOICE_POSITION_ENG.
-- Vietnamese responses use the voice selected by TTS_VOICE_POSITION_VIE.
-- Unknown or low-confidence language detection falls back to TTS_DEFAULT_LANGUAGE.
+  Admin   — Upload and ingest PDFs into the Pinecone index.
+            View index statistics, manage source files, and monitor
+            ingestion progress with real-time terminal-style logs.
 
-Voice positions are zero-based. Position 0 is the default female voice.
+  Visualize — Search and explore embedding relationships.
+              - 3D PCA Galaxy View (Plotly interactive 3D scatter)
+              - 2D t-SNE Scatter (Plotly interactive 2D scatter)
+              - Network Graph (streamlit-agraph physics-based nodes)
+              Shows top matches with similarity scores in the sidebar.
 
-English voices:
 
-0  en-US-AriaNeural          Female
-1  en-US-JennyNeural         Female
-2  en-US-GuyNeural           Male
-3  en-US-ChristopherNeural   Male
+Terminal CLI (Legacy)
+---------------------
 
-Vietnamese voices:
+The original terminal prototype is still available in main.py:
 
-0  vi-VN-HoaiMyNeural        Female
-1  vi-VN-NamMinhNeural       Male
+  python main.py
 
-For example, select a male voice for each language with:
+This runs a command-line chatbot with in-session history and Edge TTS.
+It uses a small in-memory knowledge base (not Pinecone).
 
-TTS_VOICE_POSITION_ENG=2
-TTS_VOICE_POSITION_VIE=1
 
-If a position is not an integer, is negative, or is outside the corresponding
-list, the router prints a warning and uses position 0. The old TTS_MODEL_ENG
-and TTS_MODEL_VIE settings are no longer used.
+Text-To-Speech
+--------------
 
-Edge TTS sends the text to Microsoft's online service for synthesis. Generated
-MP3 files are written to generated_audio/ with timestamped names. On macOS,
-TTS_AUTOPLAY=true plays the MP3 file automatically with afplay. On Windows,
-the MP3 opens with the registered default application. On Linux, the file is
-saved and its path is printed.
+Edge TTS converts assistant responses to spoken audio using Microsoft's
+online neural voice service. No API key is required.
 
-To temporarily disable audio:
+  English voices:
+    0  en-US-AriaNeural          Female
+    1  en-US-JennyNeural         Female
+    2  en-US-GuyNeural           Male
+    3  en-US-ChristopherNeural   Male
 
-TTS_ENABLED=false
+  Vietnamese voices:
+    0  vi-VN-HoaiMyNeural        Female
+    1  vi-VN-NamMinhNeural       Male
+
+Configure with TTS_VOICE_POSITION_ENG and TTS_VOICE_POSITION_VIE.
+Set TTS_ENABLED=false to disable audio entirely.
 
 
 Troubleshooting
 ---------------
 
-ModuleNotFoundError: No module named 'openai'
+  ModuleNotFoundError
     Activate the virtual environment and run:
-    python3 -m pip install -r requirements.txt
+    pip install -r requirements.txt
 
-ModuleNotFoundError: No module named 'edge_tts'
-    Install the TTS dependencies:
-    python3 -m pip install -r requirements.txt
+  Missing environment variables
+    Confirm .env exists and contains at minimum OPENAI_API_KEY and
+    PINECONE_API_KEY. Copy from .env.example if needed.
 
-Missing environment variables
-    Confirm that .env is in the same directory as main.py and contains
-    OPENAI_API_KEY, OPENAI_API_MODEL, and OPENAI_API_BASEURL.
+  Authentication error
+    Verify your API keys are valid for the configured providers.
 
-Authentication error
-    Check OPENAI_API_KEY and confirm that it is valid for the configured API
-    provider.
+  Pinecone dimension mismatch
+    Ensure OPENAI_EMBEDDING_DIMENSION matches your Pinecone index
+    dimension. Default is 1536 for text-embedding-3-small.
 
-Chat model not found
-    Check OPENAI_API_MODEL. Model names depend on the API provider and account
-    permissions.
+  TTS not playing
+    Confirm TTS_ENABLED=true and TTS_AUTOPLAY=true. Edge TTS
+    requires an active internet connection.
 
-Connection or endpoint error
-    Check OPENAI_API_BASEURL. For the official OpenAI API, use:
-    https://api.openai.com/v1
-
-TTS warning during first audio response
-    Edge TTS requires internet access for every audio response. Confirm that
-    the machine can reach Microsoft's online speech service and try again.
-
-TTS voice position warning
-    Confirm TTS_VOICE_POSITION_ENG or TTS_VOICE_POSITION_VIE is a zero-based
-    integer listed in the voice tables above. Invalid values fall back to 0.
-
-No audio playback
-    On macOS, confirm TTS_AUTOPLAY=true and that afplay is available. On
-    Linux, this prototype saves the MP3 file but does not autoplay it. On
-    Windows, confirm the system has an application associated with MP3 files.
-
-Wrong TTS language
-    The assistant is instructed to answer in the same language as the user.
-    Very short or mixed-language responses can still be ambiguous. Set
-    TTS_DEFAULT_LANGUAGE=vie if Vietnamese should be the fallback.
-
-
-Current Scope
--------------
-
-This is the terminal prototype only. The planned Streamlit, PDF ingestion,
-LangChain, Pinecone, and Azure VM features described in plan.md are not yet
-implemented in main.py.
+  Visualize page error
+    Ensure plotly, scikit-learn, scipy, and streamlit-agraph
+    are installed. Run pip install -r requirements.txt.
