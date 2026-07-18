@@ -6,7 +6,7 @@ Supports two AI backends:
   - Google Gemini (gemini-2.5-flash etc.) via google-genai SDK
 
 Usage:
-  python image_extraction.py --path <pdf_or_dir> [--output <dir>] [--provider openai|gemini] [--dpi 300]
+  python -m src.ingest.image_extraction --path <pdf_or_dir> [--output <dir>] [--provider openai|gemini] [--render-dpi 150] [--crop-dpi 300]
 """
 import os
 import argparse

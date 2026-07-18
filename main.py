@@ -1,61 +1,26 @@
-import json
 import os
-import platform
-import re
-import subprocess
-from datetime import datetime
-from pathlib import Path
+import sys
 
 from dotenv import load_dotenv
-from openai import OpenAI, RateLimitError, APIError
-from tenacity import retry, wait_random_exponential, stop_after_attempt, retry_if_exception_type
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_openai import ChatOpenAI
+from openai import APIError, RateLimitError
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
-# Import reusable PDF processing utilities
-from functions import extract_images, extract_text_from_pdf
+from src.lc.tools import RAG_TOOL_MAP, RAG_TOOLS
+from src.tts import TextToSpeechRouter
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DEVELOPER GUIDE: How to use Text & Visual Element Extractions programmatically
-# ─────────────────────────────────────────────────────────────────────────────
-# 
-# 1. TEXT EXTRACTION (Removes duplicate page-headers automatically):
-#    text = extract_text_from_pdf("path/to/file.pdf")
-#    print(text)
-#
-# 2. IMAGE & VISUAL ELEMENT EXTRACTION (Saves raster images & crops tables/charts/diagrams using Vision AI):
-#    result = extract_images(
-#        pdf_path="path/to/file.pdf",
-#        output_dir="output",          # base directory to save extracted visual assets
-#        provider=None,                # Auto-detects ('gemini' or 'openai') from env API keys
-#        render_dpi=150,               # DPI resolution rendered for AI bounding-box detection
-#        crop_dpi=300                  # DPI resolution rendered for final cropped high-quality image file
-#    )
-#    print(f"Extracted: {result['embedded_count']} embedded, {result['ai_extracted_count']} detected elements.")
-#    print(f"Assets saved under: {result['output_dir']}")
-# ─────────────────────────────────────────────────────────────────────────────
+# Windows consoles often use cp1258 and crash on Vietnamese output.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
+# PDF ingest utilities live under src.ingest (see scripts/ingest_pdfs.py).
+#   from src.ingest.pdf_text_extraction import extract_text_from_pdf
+#   from src.ingest.image_extraction import extract_images
 
 load_dotenv()
-
-VIETNAMESE_DIACRITICS = set(
-    "àáạảãâầấậẩẫăằắặẳẵ"
-    "èéẹẻẽêềếệểễ"
-    "ìíịỉĩ"
-    "òóọỏõôồốộổỗơờớợởỡ"
-    "ùúụủũưừứựửữ"
-    "ỳýỵỷỹđ"
-    "ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ"
-    "ÈÉẸẺẼÊỀẾỆỂỄ"
-    "ÌÍỊỈĨ"
-    "ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ"
-    "ÙÚỤỦŨƯỪỨỰỬỮ"
-    "ỲÝỴỶỸĐ"
-)
-
-LANGDETECT_CODES = {
-    "en": "eng",
-    "eng": "eng",
-    "vi": "vie",
-    "vie": "vie",
-}
 
 # Popular free models available on OpenRouter (as of mid-2026)
 FREE_OPENROUTER_MODELS = [
@@ -73,148 +38,32 @@ FREE_OPENROUTER_MODELS = [
     "liquid/lfm-2.5-1.2b-instruct:free",
 ]
 
-KNOWLEDGE_BASE = [
-    {
-        "source": "Leave Policy",
-        "keywords": {
-            "leave",
-            "vacation",
-            "annual",
-            "pto",
-            "nghỉ",
-            "nghi",
-            "phép",
-            "phep",
-            "ngày",
-            "ngay",
-        },
-        "content": (
-            "Employees receive 15 days of annual leave per year. "
-            "Leave requests must be submitted to the manager at least 3 working "
-            "days in advance."
-        ),
-    },
-    {
-        "source": "IT Support Guide",
-        "keywords": {
-            "password",
-            "login",
-            "account",
-            "locked",
-            "it",
-            "mật",
-            "mat",
-            "khẩu",
-            "khau",
-            "đăng",
-            "dang",
-            "nhập",
-            "nhap",
-            "tài",
-            "tai",
-            "khoản",
-            "khoan",
-            "khóa",
-            "khoa",
-        },
-        "content": (
-            "For password or login problems, reset the password through the "
-            "company account portal or phone number +84-98-123-1234. Contact IT support if the account remains locked."
-        ),
-    },
-    {
-        "source": "Employee Onboarding",
-        "keywords": {
-            "onboarding",
-            "new",
-            "employee",
-            "first",
-            "day",
-            "nhân",
-            "nhan",
-            "viên",
-            "vien",
-            "mới",
-            "moi",
-            "đầu",
-            "dau",
-            "tiên",
-            "tien",
-            "hội",
-            "hoi",
-            "nhập",
-            "nhap",
-        },
-        "content": (
-            "New employees must complete HR documents, security training, "
-            "account setup, and the first-day orientation."
-        ),
-    },
-]
 
-
-def retrieve_knowledge(query):
-    query_words = set(re.findall(r"\w+", query.lower(), re.UNICODE))
-    matches = [
-        item
-        for item in KNOWLEDGE_BASE
-        if query_words.intersection(item["keywords"])
-    ]
-
-    if not matches:
-        return "No relevant information was found in the knowledge base."
-
-    return "\n\n".join(
-        f"Source: {item['source']}\nContent: {item['content']}"
-        for item in matches
-    )
-
-# funcion_def= {
-#     "type":"function",
-#     "function":{
-#         "type":"object",
-#         "name":"retrieve_knowledge",
-#         "description":"retreive knowledge from knowledge base related to HR",
-#         "paremeters":{
-#             "result":{
-#                 "type":"string"
-#             }
-#         }
-#     }
-# }
-
-RETRIEVE_KNOWLEDGE_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "retrieve_knowledge",
-        "description": (
-            "Search the company knowledge base for HR policies, IT support "
-            "guides, onboarding information, and other internal documentation."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "Search query based on the employee's question.",
-                }
-            },
-            "required": ["query"],
-        },
-    },
-}
-
-
-def run_tool(name, arguments):
-    if name == "retrieve_knowledge":
-        return retrieve_knowledge(arguments.get("query", ""))
-    return f"Unknown tool: {name}"
+def build_chat_llm(
+    *,
+    api_key: str,
+    base_url: str,
+    model: str,
+    default_headers: dict[str, str] | None = None,
+) -> ChatOpenAI:
+    """Build a LangChain ChatOpenAI client for the CLI tool loop."""
+    kwargs: dict[str, object] = {
+        "model": model,
+        "api_key": api_key,
+        "base_url": base_url,
+        "temperature": 0.0,
+    }
+    if default_headers:
+        kwargs["default_headers"] = default_headers
+    return ChatOpenAI(**kwargs)
 
 
 def before_sleep_log(retry_state):
-    kwargs = retry_state.kwargs
-    args = retry_state.args
-    model_name = kwargs.get("model") or (args[1] if len(args) > 1 else "Unknown Model")
+    """Tenacity callback: log wait time before the next retry."""
+    model_name = "LLM"
+    if retry_state.args:
+        llm = retry_state.args[0]
+        model_name = getattr(llm, "model_name", None) or getattr(llm, "model", None) or model_name
     error = retry_state.outcome.exception()
     attempt = retry_state.attempt_number
     sleep_time = getattr(retry_state, "idle_for", 0)
@@ -228,214 +77,62 @@ def before_sleep_log(retry_state):
     wait=wait_random_exponential(min=1, max=10),
     stop=stop_after_attempt(3),
     before_sleep=before_sleep_log,
-    reraise=True
+    reraise=True,
 )
-def call_chat_completion(client, model, messages, tools):
-    return client.chat.completions.create(
-        model=model,
-        messages=messages,
-        tools=tools,
-    )
+def invoke_llm(llm, messages: list[BaseMessage]):
+    """Invoke a (possibly tool-bound) LangChain chat model with retry."""
+    return llm.invoke(messages)
 
 
-def get_assistant_reply(client, model, messages, fallback_client=None, fallback_model=None):
+def get_assistant_reply(llm, messages: list[BaseMessage], fallback_llm=None) -> str:
+    """Run the LangChain tool-calling loop; optionally fall back to another LLM."""
     use_fallback = False
-    active_client = client
-    active_model = model
+    active_llm = llm.bind_tools(RAG_TOOLS)
 
     while True:
         try:
-            response = call_chat_completion(
-                client=active_client,
-                model=active_model,
-                messages=messages,
-                tools=[RETRIEVE_KNOWLEDGE_TOOL],
-            )
+            ai_message = invoke_llm(active_llm, messages)
         except Exception as error:
-            if not use_fallback and fallback_client and fallback_model:
+            if not use_fallback and fallback_llm is not None:
                 print(f"\n[Warning] Primary model call failed: {error}")
-                print(f"Switching fallback to OpenRouter (model: {fallback_model})...")
-                active_client = fallback_client
-                active_model = fallback_model
+                print("Switching fallback to OpenRouter...")
+                active_llm = fallback_llm.bind_tools(RAG_TOOLS)
                 use_fallback = True
                 continue
+            print(f"\n[Error] LLM call failed permanently: {error}")
+            raise
+
+        if not isinstance(ai_message, AIMessage):
+            return str(ai_message.content or "")
+
+        if not ai_message.tool_calls:
+            content = ai_message.content
+            if isinstance(content, list):
+                parts = [
+                    block.get("text", "") if isinstance(block, dict) else str(block)
+                    for block in content
+                ]
+                return "".join(parts).strip()
+            return (content or "").strip()
+
+        messages.append(ai_message)
+        for tool_call in ai_message.tool_calls:
+            name = tool_call["name"]
+            tool_fn = RAG_TOOL_MAP.get(name)
+            if tool_fn is None:
+                result = f"Unknown tool: {name}"
             else:
-                print(f"\n[Error] LLM call failed permanently: {error}")
-                raise error
-
-        message = response.choices[0].message
-
-        if not message.tool_calls:
-            return message.content or ""
-
-        messages.append(message.model_dump(exclude_none=True))
-        #print(message.tool_calls)
-        for tool_call in message.tool_calls:
-            arguments = json.loads(tool_call.function.arguments)
-            result = run_tool(tool_call.function.name, arguments)
+                result = tool_fn.invoke(tool_call["args"])
             messages.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": result,
-                }
+                ToolMessage(
+                    content=str(result),
+                    tool_call_id=tool_call["id"],
+                )
             )
-
-
-
-
-def get_bool_env(name, default=False):
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
-
-
-def normalize_language(language):
-    if not language:
-        return None
-
-    normalized = language.strip().lower()
-    if normalized in {"en", "eng", "english"}:
-        return "eng"
-    if normalized in {"vi", "vie", "vietnamese", "tiếng việt"}:
-        return "vie"
-    return None
-
-
-def detect_text_language(text, default_language):
-    if any(character in VIETNAMESE_DIACRITICS for character in text):
-        return "vie"
-
-    try:
-        from langdetect import DetectorFactory, detect_langs
-    except ImportError:
-        return default_language
-
-    try:
-        DetectorFactory.seed = 0
-        candidates = detect_langs(text)
-    except Exception:
-        return default_language
-
-    if not candidates:
-        return default_language
-
-    candidate = candidates[0]
-    language = LANGDETECT_CODES.get(candidate.lang)
-    if language and candidate.prob >= 0.70:
-        return language
-
-    return default_language
-
-
-class TextToSpeechRouter:
-    VOICES = {
-        "eng": (
-            {"name": "en-US-AriaNeural", "gender": "Female"},
-            {"name": "en-US-JennyNeural", "gender": "Female"},
-            {"name": "en-US-GuyNeural", "gender": "Male"},
-            {"name": "en-US-ChristopherNeural", "gender": "Male"},
-        ),
-        "vie": (
-            {"name": "vi-VN-HoaiMyNeural", "gender": "Female"},
-            {"name": "vi-VN-NamMinhNeural", "gender": "Male"},
-        ),
-    }
-
-    def __init__(self):
-        self.enabled = get_bool_env("TTS_ENABLED", default=False)
-        self.autoplay = get_bool_env("TTS_AUTOPLAY", default=True)
-        self.default_language = normalize_language(
-            os.getenv("TTS_DEFAULT_LANGUAGE", "eng")
-        ) or "eng"
-        self.audio_dir = Path(os.getenv("TTS_AUDIO_DIR", "generated_audio"))
-        self.voice_positions = {
-            "eng": self.get_voice_position("eng"),
-            "vie": self.get_voice_position("vie"),
-        }
-
-    def get_voice_position(self, language):
-        env_name = f"TTS_VOICE_POSITION_{language.upper()}"
-        raw_position = os.getenv(env_name, "0")
-
-        try:
-            position = int(raw_position)
-        except ValueError:
-            print(f"TTS warning: {env_name} must be an integer; using 0")
-            return 0
-
-        if not 0 <= position < len(self.VOICES[language]):
-            print(
-                f"TTS warning: {env_name}={position} is out of range; using 0"
-            )
-            return 0
-
-        return position
-
-    def get_voice(self, language):
-        position = self.voice_positions[language]
-        return self.VOICES[language][position]["name"]
-
-    def speak(self, text):
-        if not self.enabled or not text.strip():
-            return
-
-        language = detect_text_language(text, self.default_language)
-        if language not in self.VOICES:
-            language = self.default_language
-
-        try:
-            output_path = self.synthesize(text, language)
-            if self.autoplay:
-                self.play(output_path)
-        except Exception as error:
-            print(f"TTS warning: {error}")
-
-    def synthesize(self, text, language):
-        import edge_tts
-
-        self.audio_dir.mkdir(parents=True, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        output_path = self.audio_dir / f"assistant_{timestamp}_{language}.mp3"
-        communicate = edge_tts.Communicate(text, self.get_voice(language))
-        communicate.save_sync(str(output_path))
-        return output_path
-
-    def play(self, output_path):
-        path = str(output_path)
-        system = platform.system()
- 
-        try:
-            if system == "Darwin":
-                subprocess.run(["afplay", path], check=True)
-                return
- 
-            if system == "Windows":
-                # winsound is built-in but only plays .wav files, whereas edge-tts outputs .mp3.
-                # To play MP3s in the background without any popup windows, we use Windows MCI (winmm.dll)
-                # via ctypes, and fall back to winsound.PlaySound or default os.startfile.
-                try:
-                    import ctypes
-                    path_str = str(Path(path).resolve())
-                    ctypes.windll.winmm.mciSendStringW(f'open "{path_str}" type mpegvideo alias mymp3', None, 0, 0)
-                    ctypes.windll.winmm.mciSendStringW('play mymp3 wait', None, 0, 0)
-                    ctypes.windll.winmm.mciSendStringW('close mymp3', None, 0, 0)
-                except Exception:
-                    try:
-                        import winsound
-                        winsound.PlaySound(path, winsound.SND_FILENAME)
-                    except Exception:
-                        os.startfile(path)
-                return
- 
-            print(f"TTS audio saved: {output_path}")
-        except Exception as error:
-            print(f"TTS audio saved: {output_path}")
-            print(f"TTS playback warning: {error}")
 
 
 def main():
+    """Interactive CLI chatbot with LangChain RAG tools and optional TTS."""
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("OPENAI_API_BASEURL")
     model = os.getenv("OPENAI_API_MODEL")
@@ -445,17 +142,15 @@ def main():
             "Set OPENAI_API_KEY, OPENAI_API_BASEURL, and OPENAI_API_MODEL in .env"
         )
 
-    client = OpenAI(api_key=api_key, base_url=base_url)
+    llm = build_chat_llm(api_key=api_key, base_url=base_url, model=model)
 
     # OpenRouter fallback configuration setup
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
     openrouter_url = os.getenv("OPENROUTER_BASE_URL")
     openrouter_model = os.getenv("OPENROUTER_API_MODEL") or os.getenv("OPENROUTER_MODEL")
 
-    fallback_client = None
-    fallback_model = None
+    fallback_llm = None
 
-    # Handle missing / warning conditions for OpenRouter
     missing_fallback_vars = []
     if not openrouter_key:
         missing_fallback_vars.append("OPENROUTER_API_KEY")
@@ -466,36 +161,39 @@ def main():
 
     if openrouter_key and openrouter_url:
         if not openrouter_model:
-            # warn that the model is missing and detail the default model being chosen
             openrouter_model = "meta-llama/llama-3.3-70b-instruct:free"
             print("\n" + "!" * 80)
-            print(f"[WARNING] Fallback model (OPENROUTER_API_MODEL) was not defined. Defaulting to: {openrouter_model}")
+            print(
+                f"[WARNING] Fallback model (OPENROUTER_API_MODEL) was not defined. "
+                f"Defaulting to: {openrouter_model}"
+            )
             print("!" * 80 + "\n")
-        
-        fallback_client = OpenAI(
+
+        fallback_llm = build_chat_llm(
             api_key=openrouter_key,
             base_url=openrouter_url,
+            model=openrouter_model,
             default_headers={
                 "HTTP-Referer": "https://localhost:3000",
                 "X-Title": "Chatbot Prototype",
-            }
+            },
         )
-        fallback_model = openrouter_model
-        print(f"[Info] OpenRouter fallback configured successfully (model: {fallback_model}).")
+        print(f"[Info] OpenRouter fallback configured successfully (model: {openrouter_model}).")
     else:
-        # OpenRouter is completely optional, but we warn the user if it's missing or partially configured
         print("\n" + "=" * 80)
-        print("[WARNING] OpenRouter fallback configuration is incomplete. Chatbot will run WITHOUT fallback capability.")
+        print(
+            "[WARNING] OpenRouter fallback configuration is incomplete. "
+            "Chatbot will run WITHOUT fallback capability."
+        )
         print(f"Missing variables: {', '.join(missing_fallback_vars)}")
         print("Available free OpenRouter fallback models for future reference:")
-        for m in FREE_OPENROUTER_MODELS:
-            print(f"  - {m}")
+        for item in FREE_OPENROUTER_MODELS:
+            print(f"  - {item}")
         print("=" * 80 + "\n")
 
     tts = TextToSpeechRouter()
-    system_dict = {
-        "role": "system",
-        "content": """
+    system_message = SystemMessage(
+        content="""
         You are an AI-powered Internal Company Assistant designed to help employees quickly access and understand internal company knowledge.
 
         Your primary responsibilities include answering questions related to:
@@ -510,6 +208,7 @@ def main():
         Knowledge Source
 
         You must answer questions primarily using the company’s internal knowledge base retrieved through a Retrieval-Augmented Generation (RAG) system.
+        Use the retrieve_knowledge tool when you need facts from company documents.
 
         When relevant information is found:
 
@@ -588,9 +287,9 @@ def main():
         * Prioritize factual accuracy over speculation.
         * If uncertain, acknowledge the limitation instead of guessing.
         * Answer in the same language as the user when possible.
-        """,
-    }
-    messages = [system_dict]
+        """
+    )
+    messages: list[BaseMessage] = [system_message]
 
     print("Chatbot started. Type 'exit' or 'quit' to stop.")
 
@@ -608,25 +307,20 @@ def main():
         if not user_input:
             continue
 
-        user_dict = {"role": "user", "content": user_input}
-        messages.append(user_dict)
+        messages.append(HumanMessage(content=user_input))
 
         try:
             assistant_text = get_assistant_reply(
-                client,
-                model,
+                llm,
                 messages,
-                fallback_client=fallback_client,
-                fallback_model=fallback_model
+                fallback_llm=fallback_llm,
             )
         except Exception as error:
             messages.pop()
             print(f"Error: {error}")
             continue
 
-        assistant_dict = {"role": "assistant", "content": assistant_text}
-        messages.append(assistant_dict)
-
+        messages.append(AIMessage(content=assistant_text))
         print(f"Assistant: {assistant_text}")
         tts.speak(assistant_text)
 

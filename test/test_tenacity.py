@@ -1,69 +1,63 @@
 import sys
 import unittest
 from unittest.mock import MagicMock
-from openai import RateLimitError, APIError
 
-# Add workspace root to path
-sys.path.append('.')
-from main import call_chat_completion, get_assistant_reply, RETRIEVE_KNOWLEDGE_TOOL
+from langchain_core.messages import AIMessage, HumanMessage
+from openai import RateLimitError
+
+sys.path.append(".")
+from main import get_assistant_reply, invoke_llm
+
 
 class TestTenacity(unittest.TestCase):
     def test_retry_on_rate_limit_error(self):
-        # Mock client's completion create method to raise RateLimitError twice and then succeed
-        client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = "Success"
-        mock_response.choices[0].message.tool_calls = None
-        
-        # RateLimitError requires response and body
+        llm = MagicMock()
         dummy_response = MagicMock()
         dummy_response.status_code = 429
         dummy_response.headers = {}
-        
+
         errors = [
             RateLimitError("Rate limit exceeded", response=dummy_response, body=None),
             RateLimitError("Rate limit exceeded", response=dummy_response, body=None),
-            mock_response
+            AIMessage(content="Success"),
         ]
-        client.chat.completions.create.side_effect = errors
-        
-        res = call_chat_completion(client, "test-model", [{"role": "user", "content": "hello"}], [RETRIEVE_KNOWLEDGE_TOOL])
-        
-        self.assertEqual(res.choices[0].message.content, "Success")
-        self.assertEqual(client.chat.completions.create.call_count, 3)
+        llm.invoke.side_effect = errors
+
+        res = invoke_llm(llm, [HumanMessage(content="hello")])
+
+        self.assertEqual(res.content, "Success")
+        self.assertEqual(llm.invoke.call_count, 3)
 
     def test_fallback_called_after_max_retries(self):
-        # If client always raises RateLimitError, it should raise and get caught by get_assistant_reply which switches to fallback
-        client = MagicMock()
-        fallback_client = MagicMock()
-        
+        primary = MagicMock()
+        primary_bound = MagicMock()
+        primary.bind_tools.return_value = primary_bound
+
+        fallback = MagicMock()
+        fallback_bound = MagicMock()
+        fallback.bind_tools.return_value = fallback_bound
+
         dummy_response = MagicMock()
         dummy_response.status_code = 429
         dummy_response.headers = {}
-        
-        # Primary client fails always (which triggers tenacity reraise after 3 attempts)
-        client.chat.completions.create.side_effect = RateLimitError("Rate limit", response=dummy_response, body=None)
-        
-        # Fallback client succeeds
-        fallback_response = MagicMock()
-        fallback_response.choices = [MagicMock()]
-        fallback_response.choices[0].message.content = "Fallback Success"
-        fallback_response.choices[0].message.tool_calls = None
-        fallback_client.chat.completions.create.return_value = fallback_response
-        
-        messages = [{"role": "user", "content": "hello"}]
-        reply = get_assistant_reply(
-            client=client,
-            model="primary-model",
-            messages=messages,
-            fallback_client=fallback_client,
-            fallback_model="fallback-model"
+
+        primary_bound.invoke.side_effect = RateLimitError(
+            "Rate limit",
+            response=dummy_response,
+            body=None,
         )
-        
+        fallback_bound.invoke.return_value = AIMessage(content="Fallback Success")
+
+        reply = get_assistant_reply(
+            llm=primary,
+            messages=[HumanMessage(content="hello")],
+            fallback_llm=fallback,
+        )
+
         self.assertEqual(reply, "Fallback Success")
-        self.assertEqual(client.chat.completions.create.call_count, 3)
-        self.assertEqual(fallback_client.chat.completions.create.call_count, 1)
+        self.assertEqual(primary_bound.invoke.call_count, 3)
+        self.assertEqual(fallback_bound.invoke.call_count, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
