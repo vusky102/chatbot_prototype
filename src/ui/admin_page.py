@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import html
 import tempfile
+import sys
+from contextlib import redirect_stdout
 from pathlib import Path
 
 import streamlit as st
@@ -25,6 +27,47 @@ def _load_documents(service: RAGService) -> tuple[list[str], str | None, dict[st
         return list(stats.get("source_files") or []), None, stats
     except Exception as exc:
         return [], str(exc), {}
+
+
+class StreamlitStdoutCapture:
+    """Captures stdout text and renders it into a Streamlit container."""
+
+    def __init__(self, placeholder) -> None:
+        self.placeholder = placeholder
+        self.buffer = ""
+
+    def write(self, text: str) -> None:
+        if not text:
+            return
+        self.buffer += text
+        
+        if len(self.buffer) > 30000:
+            self.buffer = "...\n" + self.buffer[-29900:]
+            
+        safe_html = html.escape(self.buffer)
+        html_code = f'''
+        <div style="
+            background-color: #0d1117; 
+            color: #c9d1d9; 
+            font-family: Consolas, 'Courier New', monospace; 
+            font-size: 13px; 
+            padding: 16px; 
+            border-radius: 8px; 
+            height: 350px; 
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #30363d;
+            margin-top: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column-reverse;
+        "><div style="margin-bottom: auto;">{safe_html}</div></div>
+        '''
+        self.placeholder.markdown(html_code, unsafe_allow_html=True)
+
+    def flush(self) -> None:
+        pass
+
 
 
 def _refresh_documents(service: RAGService) -> None:
@@ -215,17 +258,22 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
         )
 
         item = queue[0]
+        st.markdown(f"**Detailed Logs: {html.escape(str(item['name']))}**")
+        log_placeholder = st.empty()
+        
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 pdf_path = Path(tmp) / str(item["name"])
                 pdf_path.write_bytes(bytes(item["data"]))
-                result = ingest_pdf(
-                    pdf_path,
-                    settings=effective,
-                    include_visuals=bool(
-                        st.session_state.get("admin_index_include_visuals")
-                    ),
-                )
+                
+                with redirect_stdout(StreamlitStdoutCapture(log_placeholder)):
+                    result = ingest_pdf(
+                        pdf_path,
+                        settings=effective,
+                        include_visuals=bool(
+                            st.session_state.get("admin_index_include_visuals")
+                        ),
+                    )
             st.session_state.admin_index_successes.append(
                 f"`{result.get('source_file')}` ({result.get('upserted')} chunks)"
             )
