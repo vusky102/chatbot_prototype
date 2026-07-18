@@ -125,7 +125,11 @@ class PineconeVectorStore:
                 namespace=self.settings.pinecone_namespace,
                 filter={"source_file": {"$eq": target}},
             )
-        except Exception:
+        except Exception as exc:
+            # If the namespace/index doesn't exist or is empty, there is nothing to delete.
+            exc_str = str(exc).lower()
+            if "namespace not found" in exc_str or getattr(exc, "status", None) == 404:
+                return 0
             # Older serverless indexes may reject filter deletes.
             raise RuntimeError(
                 f"No vectors found for source_file={target!r}, and "

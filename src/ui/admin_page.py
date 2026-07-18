@@ -130,7 +130,7 @@ def _render_tuning_tab(base_settings: Settings) -> None:
 
     apply_col, reset_col = st.columns(2)
     with apply_col:
-        if st.button("Apply settings", type="primary", use_container_width=True):
+        if st.button("Apply settings", type="primary", width="stretch"):
             error = validate_tuning(tuning)
             if error:
                 st.error(error)
@@ -140,7 +140,7 @@ def _render_tuning_tab(base_settings: Settings) -> None:
                 st.success("Settings applied.")
                 st.rerun()
     with reset_col:
-        if st.button("Reset to .env defaults", use_container_width=True):
+        if st.button("Reset to .env defaults", width="stretch"):
             st.session_state.rag_tuning = tuning_from_settings(base_settings)
             clear_rag_service_cache()
             st.rerun()
@@ -262,7 +262,7 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
         "Upload and index",
         type="primary",
         disabled=not uploaded_files or indexing,
-        use_container_width=True,
+        width="stretch",
     ):
         if not uploaded_files:
             return
@@ -285,7 +285,7 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
 
     toolbar_left, toolbar_right = st.columns([1, 1])
     with toolbar_left:
-        if st.button("Refresh list", use_container_width=True):
+        if st.button("Refresh list", width="stretch"):
             _refresh_documents(service)
             st.rerun()
     with toolbar_right:
@@ -365,7 +365,7 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
     if st.button(
         "Delete filename above",
         disabled=not manual_name.strip(),
-        use_container_width=True,
+        width="stretch",
     ):
         target = manual_name.strip()
         _delete_document(target)
@@ -392,7 +392,7 @@ def _render_debug_tab(service: RAGService, settings: Settings) -> None:
         submitted = st.button(
             "Retrieve",
             type="primary",
-            use_container_width=True,
+            width="stretch",
             key="admin_debug_retrieve_btn",
         )
 
@@ -450,7 +450,7 @@ def _render_debug_tab(service: RAGService, settings: Settings) -> None:
             if image_path:
                 st.code(image_path)
                 if Path(image_path).is_file():
-                    st.image(image_path, use_container_width=True)
+                    st.image(image_path, width="stretch")
             if item.get("ahash"):
                 st.caption(f"aHash: {item['ahash']}")
 

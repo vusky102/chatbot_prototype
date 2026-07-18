@@ -175,10 +175,24 @@ def _inject_tts_glyph_bridge() -> None:
     )
 
 
-def _render_user_message(content: str, message_id: int) -> None:
-    """Render a right-aligned user bubble with TTS glyph."""
+def _render_user_message(
+    content: str,
+    message_id: int,
+    image_b64: str | None = None,
+    image_mime: str | None = None,
+) -> None:
+    """Render a right-aligned user bubble with TTS glyph and optional image."""
     cache_key = f"user_{message_id}"
     safe_key = html.escape(cache_key)
+
+    img_html = ""
+    if image_b64 and image_mime:
+        img_html = f'<img class="bubble-image-thumb" src="data:{image_mime};base64,{image_b64}">'
+
+    tts_html = ""
+    if content.strip():
+        tts_html = f'<span class="tts-glyph tts-key-{safe_key}" title="Play audio">volume_up</span>'
+
     with st.container():
         st.markdown(
             (
@@ -186,17 +200,18 @@ def _render_user_message(content: str, message_id: int) -> None:
                 '<div class="bubble bubble-user">'
                 '<div class="bubble-header">'
                 '<span class="bubble-label">You</span>'
-                f'<span class="tts-glyph tts-key-{safe_key}" title="Play audio">'
-                "volume_up</span>"
+                f"{tts_html}"
                 "</div>"
                 f"{_as_html_text(content)}"
+                f"{img_html}"
                 "</div>"
                 '<div class="avatar avatar-user">person</div>'
                 "</div>"
             ),
             unsafe_allow_html=True,
         )
-        _tts_hidden_button(cache_key, content)
+        if content.strip():
+            _tts_hidden_button(cache_key, content)
 
 
 def _render_assistant_thinking() -> None:
@@ -686,7 +701,7 @@ def _render_source_images(sources: list[dict]) -> None:
             f"trang {int(source.get('page', 0) or 0)}"
         )
         with st.expander(label, expanded=False):
-            st.image(str(path), use_container_width=True)
+            st.image(str(path), width="stretch")
 
 
 def render_chat_page(service: RAGService) -> None:
@@ -733,7 +748,12 @@ def render_chat_page(service: RAGService) -> None:
         for index, message in enumerate(st.session_state.messages):
             if message["role"] == "user":
                 user_id = int(message.get("id") or (index + 1))
-                _render_user_message(str(message["content"]), message_id=user_id)
+                _render_user_message(
+                    str(message["content"]),
+                    message_id=user_id,
+                    image_b64=message.get("image_b64"),
+                    image_mime=message.get("image_mime"),
+                )
             else:
                 _render_assistant_message(
                     str(message["content"]),
@@ -742,32 +762,91 @@ def render_chat_page(service: RAGService) -> None:
                 )
         _inject_tts_glyph_bridge()
 
-    pending = st.session_state.get("pending_question")
+    pending_text = st.session_state.get("pending_question")
+    pending_image_path = st.session_state.get("pending_image_path")
+    has_pending = "pending_question" in st.session_state or "pending_image_path" in st.session_state
+
     thinking_slot = st.empty()
-    if pending:
+    if has_pending:
         with thinking_slot.container():
             _render_assistant_thinking()
 
-    # Last main-body widget → Streamlit bottom bar (centered when empty via CSS).
-    prompt = st.chat_input("Ask a question...")
+    # Enable clipboard paste and button uploads via accept_file on chat_input
+    prompt = st.chat_input(
+        "Ask a question or upload/paste an image...",
+        accept_file=True,
+        file_type=["png", "jpg", "jpeg", "webp"],
+    )
     _inject_chat_input_autogrow()
+
     if prompt:
         starting_fresh = not st.session_state.messages
+        
+        # Parsed attributes depending on return type
+        prompt_text = ""
+        uploaded_files = []
+        if isinstance(prompt, str):
+            prompt_text = prompt
+        elif prompt is not None:
+            prompt_text = getattr(prompt, "text", "") or ""
+            uploaded_files = getattr(prompt, "files", []) or []
+
+        # Process the first uploaded/pasted image
+        img_b64 = None
+        img_mime = None
+        temp_img_path = None
+
+        for f in uploaded_files:
+            if f.type.startswith("image/"):
+                img_mime = f.type
+                bytes_data = f.getvalue()
+                img_b64 = base64.b64encode(bytes_data).decode("ascii")
+
+                import tempfile
+                suffix = Path(f.name).suffix or ".png"
+                fd, temp_path = tempfile.mkstemp(suffix=suffix)
+                with open(fd, "wb") as tmp_f:
+                    tmp_f.write(bytes_data)
+                temp_img_path = temp_path
+                break
+
         user_id = _next_message_id()
         st.session_state.messages.append(
-            {"role": "user", "content": prompt, "id": user_id}
+            {
+                "role": "user",
+                "content": prompt_text,
+                "image_b64": img_b64,
+                "image_mime": img_mime,
+                "id": user_id,
+            }
         )
-        st.session_state.pending_question = prompt
+        st.session_state.pending_question = prompt_text
+        if temp_img_path:
+            st.session_state.pending_image_path = temp_img_path
+            
         if starting_fresh:
             st.session_state.dock_composer_animation = True
         st.rerun()
 
-    if not pending:
+    if not has_pending:
         return
 
     try:
         history = _history_for_rag(st.session_state.messages)
-        result = service.answer(pending, history=history)
+        if pending_image_path:
+            result = service.answer_with_image(
+                pending_image_path,
+                question=pending_text or "",
+                history=history,
+            )
+            # Safe cleanup of the temp image file
+            try:
+                Path(pending_image_path).unlink(missing_ok=True)
+            except Exception:
+                pass
+        else:
+            result = service.answer(pending_text or "", history=history)
+
         answer = str(result.get("answer") or "")
         sources = list(result.get("sources") or [])
     except Exception as exc:
@@ -790,4 +869,5 @@ def render_chat_page(service: RAGService) -> None:
         }
     )
     st.session_state.pop("pending_question", None)
+    st.session_state.pop("pending_image_path", None)
     st.rerun()

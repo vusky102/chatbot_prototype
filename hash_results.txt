@@ -1,0 +1,4 @@
+aHash | crop5% dist: 8 | crop20% dist: 29
+pHash | crop5% dist: 4 | crop20% dist: 28
+wHash | crop5% dist: 6 | crop20% dist: 26
+colorHash | crop5% dist: 0 | crop20% dist: 0

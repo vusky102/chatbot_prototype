@@ -1,0 +1,5 @@
+1. Page 6 | Score 0.7100 | ContentType: image | Text: [image] Image from page 6 of Public_035.pdf. Este es un gráfico en un sistema de coordenadas cartesi
+2. Page 6 | Score 0.7077 | ContentType: diagram | Text: [diagram] Image from page 6 of Public_035.pdf. Đây là một hình ảnh chứa văn bản và một biểu đồ.  **V
+3. Page 6 | Score 0.6239 | ContentType: text | Text: Hình 3.6: Ví dụ về thuật toán gradient descent
+4. Page 3 | Score 0.6154 | ContentType: image | Text: [image] Image from page 3 of Public_035.pdf. Đây là một biểu đồ phân tán (scatter plot) với một đườn
+5. Page 7 | Score 0.6002 | ContentType: image | Text: [image] Image from page 7 of Public_035.pdf. Đây là một biểu đồ đường thể hiện mối quan hệ giữa "Giá

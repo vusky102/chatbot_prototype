@@ -62,3 +62,66 @@ class RAGService:
             for result in results
         ]
         return {"answer": answer, "sources": sources}
+
+    def answer_with_image(
+        self,
+        image_path_or_hash: str,
+        question: str = "",
+        history: list[dict[str, str]] | None = None,
+        max_distance: int = 8,
+    ) -> dict[str, object]:
+        """Retrieve context from visual similarity, caption semantics, and text query to generate a grounded answer."""
+        image_results = self.retrieve_image_by_hash(image_path_or_hash, max_distance=max_distance)
+
+        # Generate a semantic caption for the uploaded image using the Vision model
+        image_desc = ""
+        from pathlib import Path
+        path = Path(image_path_or_hash)
+        if path.is_file():
+            try:
+                from src.ingest.visual_caption import VisualCaptioner
+                captioner = VisualCaptioner(self.settings.visual_provider)
+                if getattr(captioner, "client", None) is not None:
+                     image_desc = captioner.caption(path)
+            except Exception as exc:
+                print(f"Warning: could not generate image caption: {exc}")
+
+        # Combine text logic: retrieve from Pinecone based on user question AND image semantics
+        search_query = f"{question.strip()}\n{image_desc.strip()}".strip()
+        text_results = self.retrieve(search_query) if search_query else []
+
+        seen = set()
+        combined_results = []
+        for r in image_results:
+            key = (r.source_file, r.page, r.content_type, r.heading, r.text)
+            if key not in seen:
+                seen.add(key)
+                combined_results.append(r)
+        for r in text_results:
+            key = (r.source_file, r.page, r.content_type, r.heading, r.text)
+            if key not in seen:
+                seen.add(key)
+                combined_results.append(r)
+
+        prompt_question = f"Question: {question.strip()}" if question.strip() else ""
+        if image_desc:
+             prompt_question += f"\nUploaded Image Context: {image_desc}"
+        
+        if not prompt_question.strip():
+             prompt_question = "Identify visual elements and summarize their context."
+
+        answer = self.generator.generate(prompt_question.strip(), combined_results, history=history)
+        sources = [
+            {
+                "source_file": result.source_file,
+                "page": result.page,
+                "heading": result.heading,
+                "content_type": result.content_type,
+                "score": result.score,
+                "image_path": result.image_path,
+                "ahash": result.ahash,
+            }
+            for result in combined_results
+        ]
+        return {"answer": answer, "sources": sources}
+

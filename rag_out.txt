@@ -1,0 +1,33 @@
+Dumping Page 6 and 7 indexed records:
+Page 6 | Type: text | Img: None | Text: # Bước 2: Do ở A đồ thị giảm nên f’(x= -2) = 2*(-2) = -4 < 0 => Khi gán x = x -
+learning_rate * f’(x | Hash: None
+Page 6 | Type: image | Img: output\rag_visuals\Public_035\page_6_embedded_2.jpeg | Text: [image] Image from page 6 of Public_035.pdf. Este es un gráfico en un sistema de coordenadas cartesi | Hash: fe7e3c3c9fffc766
+Page 7 | Type: text | Img: None | Text: 3 5.12 26.21 
+4 4.10 16.78 
+5 3.28 10.74 
+6 2.62 6.87 
+7 2.10 4.40 
+8 1.68 2.81 
+9 1.34 1.80 
+10 1.0 | Hash: None
+Page 7 | Type: image | Img: output\rag_visuals\Public_035\page_7_embedded_1.png | Text: [image] Image from page 7 of Public_035.pdf. The visual element is a logo featuring stylized letters | Hash: ffefc7c3c3c3ffff
+Page 6 | Type: text | Img: None | Text: giá trị của x. 
+Tương tự nếu giá trị khởi tạo tại x = 2 (tại B) thì đạo hàm tại B dương nên do x = x | Hash: None
+Page 7 | Type: image | Img: output\rag_visuals\Public_035\page_7_embedded_2.png | Text: [image] Image from page 7 of Public_035.pdf. Đây là một biểu đồ đường thể hiện mối quan hệ giữa "Giá | Hash: c1033f3f5f6f2181
+Page 6 | Type: image | Img: output\rag_visuals\Public_035\page_6_embedded_1.png | Text: [image] Image from page 6 of Public_035.pdf. The visual element is a logo featuring stylized letters | Hash: ffefc7c3c3c3ffff
+Page 7 | Type: table | Img: output\rag_visuals\Public_035\page_7_table_1.png | Text: [table] Image from page 7 of Public_035.pdf. Đây là một phần của tài liệu PDF chứa văn bản và một bả | Hash: c08080fffffefefe
+Page 6 | Type: text | Img: None | Text: Hình 3.6: Ví dụ về thuật toán gradient descent | Hash: None
+Page 6 | Type: text | Img: None | Text: # Bước 1: Khởi tạo giá trị ngẫu nhiên x = -2 (điểm A). | Hash: None
+Page 6 | Type: diagram | Img: output\rag_visuals\Public_035\page_6_diagram_1.png | Text: [diagram] Image from page 6 of Public_035.pdf. Đây là một hình ảnh chứa văn bản và một biểu đồ.
+
+**V | Hash: c0c0ceffffdddddf
+
+--- Testing Search ---
+1. Page 6 | Score 0.6175 | Img output\rag_visuals\Public_035\page_6_embedded_2.jpeg | Text: [image] Image from page 6 of Public_035.pdf. Este es un gráfico en un sistema de coordenadas cartesi
+2. Page 4 | Score 0.5931 | Img  | Text: # Thuật toán gradient descent
+3. Page 6 | Score 0.5706 | Img  | Text: Hình 3.6: Ví dụ về thuật toán gradient descent
+4. Page 6 | Score 0.4949 | Img output\rag_visuals\Public_035\page_6_diagram_1.png | Text: [diagram] Image from page 6 of Public_035.pdf. Đây là một hình ảnh chứa văn bản và một biểu đồ.
+
+**V
+5. Page 5 | Score 0.4929 | Img  | Text: ## Gradient descent
+Gradient descent là thuật toán tìm giá trị nhỏ nhất của hàm số f(x) dựa trên đạo

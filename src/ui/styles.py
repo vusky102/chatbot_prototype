@@ -1441,4 +1441,261 @@ def inject_styles() -> None:
     """Inject global app CSS into the Streamlit page."""
     import streamlit as st
 
-    st.markdown(APP_CSS, unsafe_allow_html=True)
+    theme_type = "light"
+    try:
+        # st.context.theme is a Dict-like object representing the active theme config
+        if hasattr(st.context, "theme") and st.context.theme and getattr(st.context.theme, "type", None) == "dark":
+            theme_type = "dark"
+    except Exception:
+        pass
+
+    theme_vars = ""
+    if theme_type == "dark":
+        theme_vars = """
+        :root {
+          --md-sys-color-primary: #a8c7fa;
+          --md-sys-color-on-primary: #062e6f;
+          --md-sys-color-primary-container: #0842a0;
+          --md-sys-color-on-primary-container: #d3e3fd;
+          --md-sys-color-secondary-container: #2d3138;
+          --md-sys-color-on-secondary-container: #c4c7c5;
+          --md-sys-color-surface: #1a1c1e;
+          --md-sys-color-surface-container: #252830;
+          --md-sys-color-surface-container-high: #2d3138;
+          --md-sys-color-on-surface: #e3e3e3;
+          --md-sys-color-on-surface-variant: #c4c7c5;
+          --md-sys-color-outline: #444950;
+          --md-sys-color-outline-variant: #303134;
+          --md-elevation-1: 0 1px 3px rgba(0,0,0,0.4);
+          --md-elevation-2: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        .stApp {
+          background-color: #1a1c1e !important;
+          color: #e3e3e3 !important;
+        }
+        .bubble-user {
+          background: #252830 !important;
+          color: #e3e3e3 !important;
+          border-color: #444950 !important;
+        }
+        .bubble-user .bubble-label {
+          color: #c4c7c5 !important;
+        }
+        .bubble-assistant {
+          background: #0842a0 !important;
+          color: #e3e3e3 !important;
+          border-color: #0b57d0 !important;
+        }
+        .bubble-assistant, .bubble-assistant p, .bubble-assistant span:not(.bubble-label):not(.type-pill):not(.score-pill) {
+          color: #e3e3e3 !important;
+        }
+        /* Admin overrides for dark mode */
+        .block-container:has(.admin-page-marker) {
+          color: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) [data-testid="stMarkdownContainer"] :is(p, span, li, h1, h2, h3, h4),
+        .block-container:has(.admin-page-marker) label,
+        .block-container:has(.admin-page-marker) [data-baseweb="select"] > div,
+        .block-container:has(.admin-page-marker) [data-baseweb="input"] input,
+        .block-container:has(.admin-page-marker) [data-testid="stTextInput"] input,
+        .block-container:has(.admin-page-marker) div[data-testid="stTabs"] button,
+        .block-container:has(.admin-page-marker) [data-testid="stFileUploaderDropzoneInstructions"],
+        .block-container:has(.admin-page-marker) [data-testid="stFileUploaderDropzoneInstructions"] span {
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) [data-testid="stCaptionContainer"],
+        .block-container:has(.admin-page-marker) .stCaption {
+          color: #c4c7c5 !important;
+          -webkit-text-fill-color: #c4c7c5 !important;
+        }
+        .block-container:has(.admin-page-marker) :is(
+          [data-testid="stNumberInputContainer"],
+          [data-testid="stTextInputRootElement"],
+          [data-testid="stTextAreaRootElement"]
+        ) {
+          background-color: #252830 !important;
+          background: #252830 !important;
+          border-color: #444950 !important;
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) :is(
+          [data-testid="stNumberInputField"],
+          [data-testid="stTextInput"] input,
+          [data-testid="stTextArea"] textarea
+        ) {
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+          caret-color: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) :is(
+          [data-testid="stSelectbox"],
+          [data-testid="stMultiSelect"]
+        ) div:has(> input) {
+          background-color: #252830 !important;
+          background: #252830 !important;
+          border-color: #444950 !important;
+        }
+        .block-container:has(.admin-page-marker) :is(
+          [data-testid="stSelectbox"],
+          [data-testid="stMultiSelect"]
+        ) input {
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+          caret-color: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) [data-testid="stWidgetLabel"],
+        .block-container:has(.admin-page-marker) [data-testid="stWidgetLabel"] p {
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) section[data-testid="stFileUploaderDropzone"] {
+          background: #252830 !important;
+          border-color: #444950 !important;
+        }
+        .block-container:has(.admin-page-marker) section[data-testid="stFileUploaderDropzone"] :is(
+          button,
+          span,
+          small,
+          p,
+          div
+        ) {
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) section[data-testid="stFileUploaderDropzone"] button {
+          background: #252830 !important;
+          border-color: #444950 !important;
+        }
+        .block-container:has(.admin-page-marker) [data-testid="stFileChips"],
+        .block-container:has(.admin-page-marker) [data-testid="stFileChip"] {
+          background: #252830 !important;
+          background-color: #252830 !important;
+          border-color: #444950 !important;
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) [data-testid="stFileChip"] :is(
+          [data-testid="stFileChipName"],
+          span,
+          p,
+          small,
+          div
+        ) {
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) div[data-testid="stTabs"] button[aria-selected="true"] {
+          color: #a8c7fa !important;
+          -webkit-text-fill-color: #a8c7fa !important;
+        }
+        /* Admin card */
+        .block-container:has(.admin-page-marker) div[data-testid="stHorizontalBlock"]:has(.doc-row) {
+          background: #252830 !important;
+          border-color: #444950 !important;
+        }
+        .doc-row-name {
+          color: #e3e3e3 !important;
+        }
+        .doc-row-icon {
+          color: #a8c7fa !important;
+        }
+        /* Expander overrides */
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] {
+          background: #252830 !important;
+          border-color: #444950 !important;
+        }
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] details {
+          background: #252830 !important;
+        }
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary,
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader,
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderDetails"],
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderIcon"] {
+          background: #141518 !important;
+          background-color: #141518 !important;
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary :is(p, span, div, label),
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader :is(p, span, div, label),
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary svg,
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader svg,
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderToggleIcon"] svg {
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+          fill: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary,
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+          border-bottom-color: #444950 !important;
+        }
+        .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stMarkdownContainer"] :is(p, span, li, h1, h2, h3, h4) {
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+        }
+        /* Chat input text color */
+        [data-testid="stChatInput"] {
+          background: #252830 !important;
+          background-color: #252830 !important;
+          border-color: #444950 !important;
+        }
+        [data-testid="stChatInput"] textarea {
+          color: #e3e3e3 !important;
+          caret-color: #e3e3e3 !important;
+        }
+        .source-mini-card {
+          background: #252830 !important;
+          border-color: #444950 !important;
+        }
+        .source-mini-file {
+          color: #e3e3e3 !important;
+        }
+        .source-mini-meta, .source-mini-heading {
+          color: #c4c7c5 !important;
+        }
+        .src-nav-btn {
+          background: #252830 !important;
+          color: #e3e3e3 !important;
+          border-color: #444950 !important;
+        }
+        .src-nav-btn:hover {
+          background: #2d3138 !important;
+          color: #a8c7fa !important;
+          border-color: #a8c7fa !important;
+        }
+        .stChatFloatingInputContainer,
+        [data-testid="stBottom"],
+        [data-testid="stBottom"] > div,
+        [data-testid="stBottomBlockContainer"] {
+          background: #1a1c1e !important;
+          background-color: #1a1c1e !important;
+        }
+        """
+
+    image_search_styles = """
+    .bubble-image-thumb {
+      max-width: 140px;
+      max-height: 140px;
+      border-radius: 8px;
+      margin-top: 5px;
+      cursor: pointer;
+      display: block;
+      border: 1px solid var(--md-sys-color-outline);
+    }
+    .image-match-badge {
+      display: inline-flex;
+      align-items: center;
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-primary);
+      border-radius: 999px;
+      padding: 0.12rem 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      margin-left: 5px;
+    }
+    """
+
+    st.markdown(APP_CSS + f"<style>{theme_vars}\n{image_search_styles}</style>", unsafe_allow_html=True)
+

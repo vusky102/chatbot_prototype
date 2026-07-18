@@ -1,0 +1,10 @@
+page_1_embedded_1.png vs page_1_table_1.png -> dist: 3
+page_1_embedded_1.png vs page_2_embedded_1.png -> dist: 0
+page_1_embedded_1.png vs page_3_chart_2.png -> dist: 6
+page_1_embedded_1.png vs page_3_embedded_1.png -> dist: 0
+page_1_table_1.png vs page_2_embedded_1.png -> dist: 3
+page_1_table_1.png vs page_3_chart_2.png -> dist: 3
+page_1_table_1.png vs page_3_embedded_1.png -> dist: 3
+page_2_embedded_1.png vs page_3_chart_2.png -> dist: 6
+page_2_embedded_1.png vs page_3_embedded_1.png -> dist: 0
+page_3_chart_2.png vs page_3_embedded_1.png -> dist: 6

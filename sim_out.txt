@@ -1,0 +1,23 @@
+Caption generated:
+Đây là một hình ảnh chứa văn bản và một biểu đồ.
+
+**Văn bản:**
+Phía trên cùng của hình ảnh có hai dòng văn bản được căn giữa:
+1.  Dòng đầu tiên: "VIETTEL AI RACE"
+2.  Dòng thứ hai: "HỒI QUY TUYẾN TÍNH"
+
+**Biểu đồ:**
+Phía dưới phần văn bản là một biểu đồ dạng lưới (grid) trên hệ trục tọa độ Descartes.
+*   **Lưới:** Biểu đồ có các đường lưới màu xám nhạt, tạo thành các ô vuông đều nhau.
+*   **Trục tọa độ:** Các trục tọa độ chính không được đánh dấu rõ ràng bằng mũi tên hay chữ cái (x, y), nhưng có thể suy ra từ các đường lưới và các điểm/đường trên biểu đồ.
+*   **Đường thẳng màu đỏ:** Có một đường thẳng màu đỏ đi qua phần trên bên trái của biểu đồ, cắt qua các đường lưới.
+*   **Điểm A:** Một điểm màu xanh lam nhỏ nằm trên đường thẳng màu đỏ. Gần điểm này có nhãn chữ cái "A" màu đen.
+*   **Đường thẳng đứng màu đen:** Có một đường thẳng đứng màu đen đậm, song song với trục y, đi qua một điểm trên trục x được đánh dấu là "4".
+*   **Đoạn thẳng màu đen:** Có một đoạn thẳng màu đen ngắn, đậm, nằm ở phía dưới bên trái của điểm A và đường thẳng màu đỏ, có vẻ như là một phần của một đường khác hoặc một ký hiệu.
+----------------------------------------
+Running semantic search...
+1. Page 4 | Score 0.6949 | ContentType: chart | Text: [chart] Image from page 4 of Public_035.pdf. Hình ảnh hiển thị hai dòng văn bản và một phần của biểu
+2. Page 6 | Score 0.6909 | ContentType: diagram | Text: [diagram] Image from page 6 of Public_035.pdf. Đây là một hình ảnh chứa văn bản và một biểu đồ.  **V
+3. Page 5 | Score 0.6851 | ContentType: chart | Text: [chart] Image from page 5 of Public_035.pdf. Đây là một hình ảnh chứa văn bản và một phần của biểu đ
+4. Page 3 | Score 0.6222 | ContentType: image | Text: [image] Image from page 3 of Public_035.pdf. Đây là một biểu đồ phân tán (scatter plot) với một đườn
+5. Page 2 | Score 0.6034 | ContentType: image | Text: [image] Image from page 2 of Public_035.pdf. The visual element is a logo featuring stylized light b

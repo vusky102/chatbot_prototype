@@ -1,0 +1,29 @@
+Connected. Stats: {'namespace': 'training-gd4', 'index_name': 'rag-chatbot', 'vector_count': 77, 'text_chunks': 49, 'visual_chunks': 28, 'source_files': ['Public_013.pdf', 'Public_035.pdf']}
+Public_035.pdf | Page: 7 | Img: output\rag_visuals\Public_035\page_7_embedded_1.png | AHash: ffefc7c3c3c3ffff | Type: image | Text: [image] Image from page 7 of Public_035.pdf. The v
+Public_035.pdf | Page: 8 | Img: output\rag_visuals\Public_035\page_8_embedded_2.jpeg | AHash: a5f9fcfdefa5243d | Type: image | Text: [image] Image from page 8 of Public_035.pdf. This 
+Public_035.pdf | Page: 1 | Img: output\rag_visuals\Public_035\page_1_embedded_1.png | AHash: ffefc7c3c3c3ffff | Type: image | Text: [image] Image from page 1 of Public_035.pdf. The v
+Public_035.pdf | Page: 8 | Img: output\rag_visuals\Public_035\page_8_chart_3.png | AHash: 6cfefeb3f792123e | Type: chart | Text: [chart] Image from page 8 of Public_035.pdf. The i
+Public_035.pdf | Page: 2 | Img: output\rag_visuals\Public_035\page_2_embedded_1.png | AHash: ffefc7c3c3c3ffff | Type: image | Text: [image] Image from page 2 of Public_035.pdf. The v
+Public_035.pdf | Page: 8 | Img: output\rag_visuals\Public_035\page_8_embedded_1.png | AHash: ffefc7c3c3c3ffff | Type: image | Text: [image] Image from page 8 of Public_035.pdf. The v
+Public_035.pdf | Page: 8 | Img: output\rag_visuals\Public_035\page_8_diagram_2.png | AHash: ff8007ff803fff80 | Type: diagram | Text: [diagram] Image from page 8 of Public_035.pdf. Dướ
+Public_035.pdf | Page: 6 | Img: output\rag_visuals\Public_035\page_6_diagram_1.png | AHash: c0c0ceffffdddddf | Type: diagram | Text: [diagram] Image from page 6 of Public_035.pdf. Đây
+Public_035.pdf | Page: 4 | Img: output\rag_visuals\Public_035\page_4_embedded_2.jpeg | AHash: e3e7ef82026fefef | Type: image | Text: [image] Image from page 4 of Public_035.pdf. The i
+Public_035.pdf | Page: 8 | Img: output\rag_visuals\Public_035\page_8_chart_2.png | AHash: 6cfefeb3f792123e | Type: chart | Text: [chart] Image from page 8 of Public_035.pdf. The i
+Public_035.pdf | Page: 5 | Img: output\rag_visuals\Public_035\page_5_embedded_2.jpeg | AHash: 666cacadad99db00 | Type: image | Text: [image] Image from page 5 of Public_035.pdf. The i
+Public_035.pdf | Page: 3 | Img: output\rag_visuals\Public_035\page_3_embedded_3.jpeg | AHash: ff7d73671f430181 | Type: image | Text: [image] Image from page 3 of Public_035.pdf. Đây l
+Public_035.pdf | Page: 8 | Img: output\rag_visuals\Public_035\page_8_embedded_3.jpeg | AHash: 677f3f0f84f0004f | Type: image | Text: [image] Image from page 8 of Public_035.pdf. This 
+Public_035.pdf | Page: 4 | Img: output\rag_visuals\Public_035\page_4_chart_1.png | AHash: c0ff80c1ffffffff | Type: chart | Text: [chart] Image from page 4 of Public_035.pdf. Hình 
+Public_035.pdf | Page: 4 | Img: output\rag_visuals\Public_035\page_4_embedded_1.png | AHash: ffefc7c3c3c3ffff | Type: image | Text: [image] Image from page 4 of Public_035.pdf. The v
+Public_035.pdf | Page: 9 | Img: output\rag_visuals\Public_035\page_9_embedded_1.png | AHash: ffefc7c3c3c3ffff | Type: image | Text: [image] Image from page 9 of Public_035.pdf. The v
+Public_035.pdf | Page: 5 | Img: output\rag_visuals\Public_035\page_5_chart_1.png | AHash: c0c0efffdddfddfd | Type: chart | Text: [chart] Image from page 5 of Public_035.pdf. Đây l
+Public_035.pdf | Page: 1 | Img: output\rag_visuals\Public_035\page_1_table_1.png | AHash: 0000ffffffff0000 | Type: table | Text: [table] Image from page 1 of Public_035.pdf. n lin
+Public_035.pdf | Page: 7 | Img: output\rag_visuals\Public_035\page_7_embedded_2.png | AHash: c1033f3f5f6f2181 | Type: image | Text: [image] Image from page 7 of Public_035.pdf. Đây l
+Public_035.pdf | Page: 3 | Img: output\rag_visuals\Public_035\page_3_embedded_1.png | AHash: ffefc7c3c3c3ffff | Type: image | Text: [image] Image from page 3 of Public_035.pdf. The v
+Public_035.pdf | Page: 2 | Img: output\rag_visuals\Public_035\page_2_embedded_2.jpeg | AHash: ff3c7b736f5f1f01 | Type: image | Text: [image] Image from page 2 of Public_035.pdf. Đây l
+Public_035.pdf | Page: 6 | Img: output\rag_visuals\Public_035\page_6_embedded_1.png | AHash: ffefc7c3c3c3ffff | Type: image | Text: [image] Image from page 6 of Public_035.pdf. The v
+Public_035.pdf | Page: 5 | Img: output\rag_visuals\Public_035\page_5_embedded_1.png | AHash: ffefc7c3c3c3ffff | Type: image | Text: [image] Image from page 5 of Public_035.pdf. The v
+Public_035.pdf | Page: 3 | Img: output\rag_visuals\Public_035\page_3_embedded_2.jpeg | AHash: ff7c7973670f1f81 | Type: image | Text: [image] Image from page 3 of Public_035.pdf. Đây l
+Public_035.pdf | Page: 7 | Img: output\rag_visuals\Public_035\page_7_table_1.png | AHash: c08080fffffefefe | Type: table | Text: [table] Image from page 7 of Public_035.pdf. Đây l
+Public_035.pdf | Page: 3 | Img: output\rag_visuals\Public_035\page_3_chart_2.png | AHash: fc9df9d3d7c7cfc0 | Type: chart | Text: [chart] Image from page 3 of Public_035.pdf. Biểu 
+Public_035.pdf | Page: 8 | Img: output\rag_visuals\Public_035\page_8_figure_1.png | AHash: ff8007ff803fff80 | Type: image | Text: [image] Image from page 8 of Public_035.pdf. Dưới 
+Public_035.pdf | Page: 6 | Img: output\rag_visuals\Public_035\page_6_embedded_2.jpeg | AHash: fe7e3c3c9fffc766 | Type: image | Text: [image] Image from page 6 of Public_035.pdf. Este 

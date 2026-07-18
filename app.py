@@ -50,7 +50,7 @@ def main() -> None:
             if st.button(
                 "New chat",
                 key="nav_new_chat",
-                use_container_width=True,
+                width="stretch",
                 type="primary",
             ):
                 st.session_state.messages = []
@@ -58,11 +58,11 @@ def main() -> None:
                 st.session_state.pop("dock_composer_animation", None)
                 st.rerun()
 
-            if st.button("Admin", key="nav_to_admin", use_container_width=True):
+            if st.button("Admin", key="nav_to_admin", width="stretch"):
                 st.session_state.sidebar_page = "Admin"
                 st.rerun()
         else:
-            if st.button("Chat", key="nav_to_chat", use_container_width=True):
+            if st.button("Chat", key="nav_to_chat", width="stretch"):
                 st.session_state.sidebar_page = "Chat"
                 st.rerun()
 
