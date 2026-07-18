@@ -1541,45 +1541,67 @@ def inject_styles() -> None:
     if theme_type == "dark":
         theme_vars = """
         :root {
-          --md-sys-color-primary: #a8c7fa;
-          --md-sys-color-on-primary: #062e6f;
-          --md-sys-color-primary-container: #0842a0;
-          --md-sys-color-on-primary-container: #d3e3fd;
-          --md-sys-color-secondary-container: #2d3138;
-          --md-sys-color-on-secondary-container: #c4c7c5;
-          --md-sys-color-surface: #1a1c1e;
-          --md-sys-color-surface-container: #252830;
-          --md-sys-color-surface-container-high: #2d3138;
-          --md-sys-color-on-surface: #e3e3e3;
-          --md-sys-color-on-surface-variant: #c4c7c5;
-          --md-sys-color-outline: #444950;
-          --md-sys-color-outline-variant: #303134;
-          --md-elevation-1: 0 1px 3px rgba(0,0,0,0.4);
-          --md-elevation-2: 0 2px 6px rgba(0,0,0,0.4);
+          --md-sys-color-primary: #ffffff;
+          --md-sys-color-on-primary: #000000;
+          --md-sys-color-primary-container: #111111;
+          --md-sys-color-on-primary-container: #ffffff;
+          --md-sys-color-secondary-container: #222222;
+          --md-sys-color-on-secondary-container: #a0a0a0;
+          --md-sys-color-surface: #000000;
+          --md-sys-color-surface-container: #111111;
+          --md-sys-color-surface-container-high: #222222;
+          --md-sys-color-on-surface: #ffffff;
+          --md-sys-color-on-surface-variant: #a0a0a0;
+          --md-sys-color-outline: #333333;
+          --md-sys-color-outline-variant: #222222;
+          --md-elevation-1: 0 1px 3px rgba(0,0,0,0.6);
+          --md-elevation-2: 0 2px 6px rgba(0,0,0,0.6);
         }
         .stApp {
-          background-color: #1a1c1e !important;
-          color: #e3e3e3 !important;
+          background-color: #000000 !important;
+          color: #ffffff !important;
         }
         .bubble-user {
-          background: #252830 !important;
-          color: #e3e3e3 !important;
-          border-color: #444950 !important;
+          background: #111111 !important;
+          color: #ffffff !important;
+          border-color: #333333 !important;
         }
         .bubble-user .bubble-label {
-          color: #c4c7c5 !important;
+          color: #a0a0a0 !important;
+        }
+        .bubble-user p, .bubble-user span:not(.bubble-label) {
+          color: #ffffff !important;
         }
         .bubble-assistant {
-          background: #0842a0 !important;
-          color: #e3e3e3 !important;
-          border-color: #0b57d0 !important;
+          background: #000000 !important;
+          color: #ffffff !important;
+          border-color: transparent !important;
         }
-        .bubble-assistant, .bubble-assistant p, .bubble-assistant span:not(.bubble-label):not(.type-pill):not(.score-pill) {
-          color: #e3e3e3 !important;
+        .bubble-assistant, .bubble-assistant p, .bubble-assistant span:not(.bubble-label):not(.type-pill):not(.score-pill),
+        .assistant-answer, .assistant-answer p, .assistant-answer span:not(.bubble-label):not(.type-pill):not(.score-pill),
+        .typing-text, .typing-row {
+          color: #ffffff !important;
+        }
+        .score-pill {
+          background: #333333 !important;
+          color: #ffffff !important;
+        }
+        .type-pill, .hit-pill {
+          background: #222222 !important;
+          color: #ffffff !important;
+        }
+        .avatar-user {
+          background: #333333 !important;
+          color: #ffffff !important;
+        }
+        .avatar-assistant {
+          background: #111111 !important;
+          color: #ffffff !important;
+          border: 1px solid #333333 !important;
         }
         /* Admin overrides for dark mode */
         .block-container:has(.admin-page-marker) {
-          color: #e3e3e3 !important;
+          color: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) [data-testid="stMarkdownContainer"] :is(p, span, li, h1, h2, h3, h4),
         .block-container:has(.admin-page-marker) label,
@@ -1589,58 +1611,58 @@ def inject_styles() -> None:
         .block-container:has(.admin-page-marker) div[data-testid="stTabs"] button,
         .block-container:has(.admin-page-marker) [data-testid="stFileUploaderDropzoneInstructions"],
         .block-container:has(.admin-page-marker) [data-testid="stFileUploaderDropzoneInstructions"] span {
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) [data-testid="stCaptionContainer"],
         .block-container:has(.admin-page-marker) .stCaption {
-          color: #c4c7c5 !important;
-          -webkit-text-fill-color: #c4c7c5 !important;
+          color: #a0a0a0 !important;
+          -webkit-text-fill-color: #a0a0a0 !important;
         }
         .block-container:has(.admin-page-marker) :is(
           [data-testid="stNumberInputContainer"],
           [data-testid="stTextInputRootElement"],
           [data-testid="stTextAreaRootElement"]
         ) {
-          background-color: #252830 !important;
-          background: #252830 !important;
-          border-color: #444950 !important;
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
+          background-color: #111111 !important;
+          background: #111111 !important;
+          border-color: #333333 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) :is(
           [data-testid="stNumberInputField"],
           [data-testid="stTextInput"] input,
           [data-testid="stTextArea"] textarea
         ) {
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
-          caret-color: #e3e3e3 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
+          caret-color: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) :is(
           [data-testid="stSelectbox"],
           [data-testid="stMultiSelect"]
         ) div:has(> input) {
-          background-color: #252830 !important;
-          background: #252830 !important;
-          border-color: #444950 !important;
+          background-color: #111111 !important;
+          background: #111111 !important;
+          border-color: #333333 !important;
         }
         .block-container:has(.admin-page-marker) :is(
           [data-testid="stSelectbox"],
           [data-testid="stMultiSelect"]
         ) input {
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
-          caret-color: #e3e3e3 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
+          caret-color: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) [data-testid="stWidgetLabel"],
         .block-container:has(.admin-page-marker) [data-testid="stWidgetLabel"] p {
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) section[data-testid="stFileUploaderDropzone"] {
-          background: #252830 !important;
-          border-color: #444950 !important;
+          background: #111111 !important;
+          border-color: #333333 !important;
         }
         .block-container:has(.admin-page-marker) section[data-testid="stFileUploaderDropzone"] :is(
           button,
@@ -1649,20 +1671,20 @@ def inject_styles() -> None:
           p,
           div
         ) {
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) section[data-testid="stFileUploaderDropzone"] button {
-          background: #252830 !important;
-          border-color: #444950 !important;
+          background: #111111 !important;
+          border-color: #333333 !important;
         }
         .block-container:has(.admin-page-marker) [data-testid="stFileChips"],
         .block-container:has(.admin-page-marker) [data-testid="stFileChip"] {
-          background: #252830 !important;
-          background-color: #252830 !important;
-          border-color: #444950 !important;
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
+          background: #111111 !important;
+          background-color: #111111 !important;
+          border-color: #333333 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) [data-testid="stFileChip"] :is(
           [data-testid="stFileChipName"],
@@ -1671,123 +1693,131 @@ def inject_styles() -> None:
           small,
           div
         ) {
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) div[data-testid="stTabs"] button[aria-selected="true"] {
-          color: #a8c7fa !important;
-          -webkit-text-fill-color: #a8c7fa !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         /* Admin card */
         .block-container:has(.admin-page-marker) div[data-testid="stHorizontalBlock"]:has(.doc-row) {
-          background: #252830 !important;
-          border-color: #444950 !important;
+          background: #111111 !important;
+          border-color: #333333 !important;
         }
         .doc-row-name {
-          color: #e3e3e3 !important;
+          color: #ffffff !important;
         }
         .doc-row-icon {
-          color: #a8c7fa !important;
+          color: #ffffff !important;
         }
         /* Expander overrides */
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] {
-          background: #252830 !important;
-          border-color: #444950 !important;
+          background: #111111 !important;
+          border-color: #333333 !important;
         }
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] details {
-          background: #252830 !important;
+          background: #111111 !important;
         }
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary,
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader,
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderDetails"],
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderIcon"] {
-          background: #141518 !important;
-          background-color: #141518 !important;
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
+          background: #000000 !important;
+          background-color: #000000 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary :is(p, span, div, label),
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader :is(p, span, div, label),
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary svg,
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader svg,
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderToggleIcon"] svg {
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
-          fill: #e3e3e3 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
+          fill: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary,
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
-          border-bottom-color: #444950 !important;
+          border-bottom-color: #333333 !important;
         }
         .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stMarkdownContainer"] :is(p, span, li, h1, h2, h3, h4) {
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         /* Chat input text color */
         [data-testid="stChatInput"] {
-          background: #252830 !important;
-          background-color: #252830 !important;
-          border-color: #444950 !important;
+          background: #111111 !important;
+          background-color: #111111 !important;
+          border-color: #333333 !important;
         }
         [data-testid="stChatInput"] textarea {
-          color: #e3e3e3 !important;
-          caret-color: #e3e3e3 !important;
+          color: #ffffff !important;
+          caret-color: #ffffff !important;
         }
         .source-mini-card {
-          background: #252830 !important;
-          border-color: #444950 !important;
+          background: #111111 !important;
+          border-color: #333333 !important;
         }
         .source-mini-file {
-          color: #e3e3e3 !important;
+          color: #ffffff !important;
         }
         .source-mini-meta, .source-mini-heading {
-          color: #c4c7c5 !important;
+          color: #a0a0a0 !important;
         }
         .src-nav-btn {
-          background: #252830 !important;
-          color: #e3e3e3 !important;
-          border-color: #444950 !important;
+          background: #111111 !important;
+          color: #ffffff !important;
+          border-color: #333333 !important;
         }
         .src-nav-btn:hover {
-          background: #2d3138 !important;
-          color: #a8c7fa !important;
-          border-color: #a8c7fa !important;
+          background: #222222 !important;
+          color: #ffffff !important;
+          border-color: #ffffff !important;
         }
         .stChatFloatingInputContainer,
         [data-testid="stBottom"],
         [data-testid="stBottom"] > div,
         [data-testid="stBottomBlockContainer"] {
-          background: #1a1c1e !important;
-          background-color: #1a1c1e !important;
+          background: #000000 !important;
+          background-color: #000000 !important;
         }
         
         /* Sidebar buttons */
         [data-testid="stSidebar"] .stButton > button,
         [data-testid="stSidebar"] .stButton > button[kind="primary"],
         [data-testid="stSidebar"] .stButton > button[kind="secondary"] {
-          background: #252830 !important;
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
-          border-color: #444950 !important;
+          background: #111111 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
+          border-color: #333333 !important;
         }
         [data-testid="stSidebar"] .stButton > button:hover,
         [data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
-          background: #2d3138 !important;
-          border-color: #a8c7fa !important;
+          background: #222222 !important;
+          border-color: #ffffff !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
+        }
+        [data-testid="stSidebar"] .stButton > button:hover p,
+        [data-testid="stSidebar"] .stButton > button:hover div,
+        [data-testid="stSidebar"] .stButton > button:hover span {
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         
         /* Primary (Active) Sidebar button accent */
         [data-testid="stSidebar"] .stButton > button[kind="primary"],
         [data-testid="stSidebar"] .stButton > button[data-testid="stBaseButton-primary"] {
-          background: #0842a0 !important;
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
-          border-color: #0b57d0 !important;
+          background: #222222 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
+          border-color: #555555 !important;
         }
         [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover,
         [data-testid="stSidebar"] .stButton > button[data-testid="stBaseButton-primary"]:hover {
-          background: #062e6f !important;
-          border-color: #a8c7fa !important;
+          background: #333333 !important;
+          border-color: #ffffff !important;
         }
         
         /* Input Placeholders */
@@ -1803,20 +1833,20 @@ def inject_styles() -> None:
         /* Checkboxes/Toggles Label & Bg */
         .block-container:has(.admin-page-marker) [data-testid="stCheckbox"]:not(:has(svg)) [data-testid="stWidgetLabel"],
         .block-container:has(.admin-page-marker) [data-testid="stCheckbox"]:not(:has(svg)) [data-testid="stWidgetLabel"] p {
-          color: #e3e3e3 !important;
-          -webkit-text-fill-color: #e3e3e3 !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         .block-container:has(.admin-page-marker) [data-testid="stCheckbox"]:not(:has(svg)) > *:not([data-selected]) > div:has(> div):not([data-testid="stWidgetLabel"]) {
-          background-color: #444950 !important;
-          border-color: #303134 !important;
+          background-color: #333333 !important;
+          border-color: #222222 !important;
         }
         
         /* Inline Code Blocks in Captions */
         .block-container:has(.admin-page-marker) [data-testid="stCaptionContainer"] code,
         .block-container:has(.admin-page-marker) .stCaption code {
-          background: rgba(168, 199, 250, 0.15) !important;
-          color: #a8c7fa !important;
-          -webkit-text-fill-color: #a8c7fa !important;
+          background: rgba(255, 255, 255, 0.15) !important;
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
         """
 

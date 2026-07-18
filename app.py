@@ -13,6 +13,7 @@ from src.ui.admin_page import render_admin_page
 from src.ui.chat_page import render_chat_page
 from src.ui.rag_session import get_base_settings, get_rag_service
 from src.ui.styles import inject_styles
+from src.utils.model_scanner import get_available_models
 
 
 st.set_page_config(
@@ -79,6 +80,42 @@ def main() -> None:
             key="app_theme_control",
             label_visibility="collapsed",
         )
+
+        try:
+            base_s = get_base_settings()
+            models = get_available_models(
+                base_s.openai_api_key, 
+                base_s.openai_base_url,
+                base_s.gemini_api_key,
+                base_s.openrouter_api_key,
+                base_s.openrouter_base_url
+            )
+            
+            def _on_model_change():
+                if "rag_tuning" in st.session_state and "app_chat_model" in st.session_state:
+                    selected = st.session_state.app_chat_model
+                    # if we have a tuple, grab the 2nd element (the model id)
+                    model_id = selected[1] if isinstance(selected, tuple) else selected
+                    st.session_state.rag_tuning["chat_model"] = model_id
+            
+            # Retrieve currently active model string (e.g. 'gpt-4o-mini')
+            current_model_id = st.session_state.get("rag_tuning", {}).get("chat_model") or base_s.chat_model
+            
+            # Find the corresponding tuple (Provider, ModelID) from the models list
+            current_choice = next((x for x in models if x[1] == current_model_id), None)
+            if not current_choice and models:
+                current_choice = models[0]
+                
+            st.selectbox(
+                "Chat Model",
+                options=models,
+                format_func=lambda x: f"[{x[0]}] {x[1]}" if isinstance(x, tuple) else x,
+                index=models.index(current_choice) if current_choice in models else 0,
+                key="app_chat_model",
+                on_change=_on_model_change
+            )
+        except Exception:
+            pass
 
     try:
         settings = get_base_settings()

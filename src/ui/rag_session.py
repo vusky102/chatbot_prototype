@@ -17,6 +17,7 @@ def get_base_settings() -> Settings:
 
 @st.cache_resource(show_spinner=False)
 def _cached_rag_service(
+    chat_model: str,
     chunk_size: int,
     chunk_overlap: int,
     chunk_strategy: str,
@@ -31,6 +32,7 @@ def _cached_rag_service(
     base = get_base_settings()
     settings = replace(
         base,
+        chat_model=chat_model,
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         chunk_strategy=chunk_strategy,

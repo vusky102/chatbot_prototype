@@ -39,6 +39,9 @@ class Settings:
     openai_api_key: str = ""
     openai_base_url: str = ""
     chat_model: str = "gpt-4o-mini"
+    gemini_api_key: str = ""
+    openrouter_api_key: str = ""
+    openrouter_base_url: str = ""
     embedding_api_key: str = ""
     embedding_base_url: str = ""
     embedding_model: str = "text-embedding-3-small"
@@ -67,6 +70,9 @@ class Settings:
             openai_api_key=openai_api_key,
             openai_base_url=openai_base_url,
             chat_model=os.getenv("OPENAI_API_MODEL", "gpt-4o-mini").strip(),
+            gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip(),
+            openrouter_api_key=os.getenv("OPENROUTER_API_KEY", "").strip(),
+            openrouter_base_url=os.getenv("OPENROUTER_BASE_URL", "").strip(),
             embedding_api_key=(
                 os.getenv("OPENAI_EMBEDDING_API_KEY") or openai_api_key
             ).strip(),

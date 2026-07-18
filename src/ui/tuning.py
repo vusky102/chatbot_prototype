@@ -8,6 +8,7 @@ from src.config import Settings
 from src.ingest.chunking import CHUNK_STRATEGIES
 
 TUNING_KEYS = (
+    "chat_model",
     "chunk_size",
     "chunk_overlap",
     "chunk_strategy",

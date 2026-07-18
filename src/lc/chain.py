@@ -13,24 +13,43 @@ from src.models import SearchResult
 
 SYSTEM_PROMPT = """
 You are an internal document assistant. Answer only with facts supported by the
-provided context. If the context does not contain enough evidence, say that the
-information was not found in the knowledge base. Never invent details.
+provided context. If the context does not contain enough evidence, clearly state that the information is not available in the knowledge base (translate this statement to the user's language). Never invent details.
 
-Use the same language as the question. Add inline citations in the exact format
-[source_file, page N] after supported statements. Keep the answer concise.
+Use the same language as the question. Add inline citations containing the source file name and page number in brackets (e.g., [document.pdf, page 6]) after supported statements. Keep the answer concise.
 """.strip()
 
 
-def build_chat_model(settings: Settings) -> ChatOpenAI:
+def build_chat_model(settings: Settings) -> Runnable:
     """Construct the chat LLM used by the grounded answer chain."""
-    kwargs: dict[str, object] = {
-        "model": settings.chat_model,
-        "api_key": settings.openai_api_key,
-        "temperature": 0.0,
-    }
-    if settings.openai_base_url:
-        kwargs["base_url"] = settings.openai_base_url
-    return ChatOpenAI(**kwargs)
+    model_lower = settings.chat_model.lower()
+    
+    if model_lower.startswith("gemini"):
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        return ChatGoogleGenerativeAI(
+            model=settings.chat_model,
+            google_api_key=settings.gemini_api_key,
+            temperature=0.0
+        )
+    elif "/" in settings.chat_model:
+        # Route to OpenRouter for models with paths (e.g. meta-llama/...)
+        kwargs: dict[str, object] = {
+            "model": settings.chat_model,
+            "api_key": settings.openrouter_api_key,
+            "temperature": 0.0,
+        }
+        if settings.openrouter_base_url:
+            kwargs["base_url"] = settings.openrouter_base_url
+        return ChatOpenAI(**kwargs)
+    else:
+        # Standard OpenAI route
+        kwargs: dict[str, object] = {
+            "model": settings.chat_model,
+            "api_key": settings.openai_api_key,
+            "temperature": 0.0,
+        }
+        if settings.openai_base_url:
+            kwargs["base_url"] = settings.openai_base_url
+        return ChatOpenAI(**kwargs)
 
 
 def build_answer_chain(settings: Settings) -> Runnable:
