@@ -17,6 +17,7 @@ TUNING_KEYS = (
     "retrieval_dedup_enabled",
     "retrieval_dedup_threshold",
     "retrieval_candidate_multiplier",
+    "retrieval_hybrid_alpha",
     "visual_provider",
 )
 
@@ -70,6 +71,10 @@ def validate_tuning(values: dict[str, object]) -> str | None:
     multiplier = int(values["retrieval_candidate_multiplier"])
     if multiplier < 1:
         return "Candidate multiplier must be at least 1."
+
+    hybrid_alpha = float(values["retrieval_hybrid_alpha"])
+    if hybrid_alpha < 0.0 or hybrid_alpha > 1.0:
+        return "Hybrid Alpha must be between 0.0 (exact keyword matching) and 1.0 (dense semantic matching)."
 
     provider = str(values["visual_provider"]).strip().lower()
     if provider not in {"gemini", "openai"}:

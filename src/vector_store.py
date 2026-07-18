@@ -3,6 +3,15 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from pinecone import Pinecone, ServerlessSpec
+from pinecone_text.sparse import BM25Encoder
+from pinecone_text.hybrid import hybrid_convex_scale
+
+try:
+    import nltk
+    nltk.download('punkt', quiet=True)
+    nltk.download('punkt_tab', quiet=True)
+except Exception:
+    pass
 
 from src.config import Settings
 from src.ingest.ahash import compute_ahash, hamming_distance
@@ -37,6 +46,7 @@ class PineconeVectorStore:
         self.settings = settings
         self.client = Pinecone(api_key=settings.pinecone_api_key)
         self.index = None
+        self.bm25 = BM25Encoder().default()
 
     def connect(self, create_if_missing: bool = False):
         names = set(self.client.list_indexes().names())
@@ -48,7 +58,7 @@ class PineconeVectorStore:
             self.client.create_index(
                 name=self.settings.pinecone_index_name,
                 dimension=self.settings.embedding_dimension,
-                metric="cosine",
+                metric="dotproduct",
                 spec=ServerlessSpec(
                     cloud=self.settings.pinecone_cloud,
                     region=self.settings.pinecone_region,
@@ -147,9 +157,17 @@ class PineconeVectorStore:
         if len(chunks) != len(vectors):
             raise ValueError("chunks and vectors must have the same length")
 
+        texts = [chunk.text for chunk in chunks]
+        sparse_vectors = self.bm25.encode_documents(texts)
+
         records = [
-            {"id": chunk.id, "values": vector, "metadata": chunk.metadata()}
-            for chunk, vector in zip(chunks, vectors)
+            {
+                "id": chunk.id, 
+                "values": vector, 
+                "sparse_values": sparse, 
+                "metadata": chunk.metadata()
+            }
+            for chunk, vector, sparse in zip(chunks, vectors, sparse_vectors)
         ]
         for batch in _batches(records, batch_size):
             self.index.upsert(
@@ -165,16 +183,28 @@ class PineconeVectorStore:
         score_threshold: float,
         metadata_filter: dict | None = None,
         include_values: bool = False,
+        query_text: str = "",
+        alpha: float = 0.5,
     ) -> list[SearchResult]:
         self._require_index()
-        response = self.index.query(
-            vector=query_vector,
-            top_k=top_k,
-            include_metadata=True,
-            include_values=include_values,
-            namespace=self.settings.pinecone_namespace,
-            filter=metadata_filter,
-        )
+        
+        kwargs = {
+            "top_k": top_k,
+            "include_metadata": True,
+            "include_values": include_values,
+            "namespace": self.settings.pinecone_namespace,
+            "filter": metadata_filter,
+        }
+        
+        if query_text.strip() and alpha < 1.0:
+            sparse = self.bm25.encode_queries(query_text)
+            dense_scaled, sparse_scaled = hybrid_convex_scale(query_vector, sparse, alpha)
+            kwargs["vector"] = dense_scaled
+            kwargs["sparse_vector"] = sparse_scaled
+        else:
+            kwargs["vector"] = query_vector
+
+        response = self.index.query(**kwargs)
         results = []
         seen_ids = set()
         for match in response.matches:

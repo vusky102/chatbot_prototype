@@ -26,6 +26,7 @@ def _cached_rag_service(
     retrieval_dedup_enabled: bool,
     retrieval_dedup_threshold: float,
     retrieval_candidate_multiplier: int,
+    retrieval_hybrid_alpha: float,
     visual_provider: str,
 ) -> RAGService:
     """Build a RAGService keyed by the admin tuning fingerprint."""
@@ -41,6 +42,7 @@ def _cached_rag_service(
         retrieval_dedup_enabled=retrieval_dedup_enabled,
         retrieval_dedup_threshold=retrieval_dedup_threshold,
         retrieval_candidate_multiplier=retrieval_candidate_multiplier,
+        retrieval_hybrid_alpha=retrieval_hybrid_alpha,
         visual_provider=visual_provider,
     )
     settings.validate_for_vector_store()

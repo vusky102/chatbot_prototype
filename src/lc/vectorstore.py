@@ -127,12 +127,16 @@ class LangChainPineconeVectorStore(VectorStore):
     ) -> list[tuple[Document, float]]:
         """Return (document, score) pairs above an optional score threshold."""
         query_vector = self._embedding.embed_query(query)
+        alpha = kwargs.get("alpha", self._settings.retrieval_hybrid_alpha)
+        
         results = self._store.search(
             query_vector=query_vector,
             top_k=k,
             score_threshold=score_threshold,
             metadata_filter=metadata_filter,
             include_values=include_values,
+            query_text=query,
+            alpha=alpha,
         )
         paired: list[tuple[Document, float]] = []
         for item in results:

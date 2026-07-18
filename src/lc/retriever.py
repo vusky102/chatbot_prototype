@@ -114,7 +114,7 @@ class LangChainSemanticRetriever:
         self.vectorstore = LangChainPineconeVectorStore(
             settings,
             self.embeddings,
-            create_if_missing=False,
+            create_if_missing=True,
         )
         self.store = self.vectorstore.store
 

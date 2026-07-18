@@ -103,12 +103,13 @@ class RAGService:
                 seen.add(key)
                 combined_results.append(r)
 
-        prompt_question = f"Question: {question.strip()}" if question.strip() else ""
+        prompt_question = question.strip()
+        if not prompt_question:
+             # If the user uploaded an image without typing text, force a question so the LLM knows what to answer
+             prompt_question = "Please analyze the uploaded image using the provided context and explain what it illustrates."
+
         if image_desc:
-             prompt_question += f"\nUploaded Image Context: {image_desc}"
-        
-        if not prompt_question.strip():
-             prompt_question = "Identify visual elements and summarize their context."
+             prompt_question += f"\n\nUploaded Image Context:\n{image_desc}"
 
         answer = self.generator.generate(prompt_question.strip(), combined_results, history=history)
         sources = [

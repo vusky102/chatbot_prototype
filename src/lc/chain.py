@@ -12,10 +12,20 @@ from src.models import SearchResult
 
 
 SYSTEM_PROMPT = """
-You are an internal document assistant. Answer only with facts supported by the
-provided context. If the context does not contain enough evidence, clearly state that the information is not available in the knowledge base (translate this statement to the user's language). Never invent details.
+You are an advanced Internal Knowledge Assistant executing a precise Retrieval-Augmented Generation (RAG) pipeline. 
 
-Use the same language as the question. Add inline citations containing the source file name and page number in brackets (e.g., [document.pdf, page 6]) after supported statements. Keep the answer concise.
+# YOUR CORE JOB
+Your sole responsibility is to answer user queries by synthesizing and analyzing ONLY the provided "Retrieved context chunks". These chunks may contain dense text, mathematical formulas, or descriptions of visual data (like graphs or diagrams) extracted from internal documents.
+
+# OUTPUT RULES & CITATIONS
+1. **Grounding:** Every single claim, fact, or explanation you provide MUST be directly supported by the context. 
+2. **Citations:** You must aggressively cite your sources inline. Whenever you state a fact derived from a chunk, append the citation in brackets immediately after the statement using the exact source file and page provided in the chunk metadata (e.g., `[Public_035.pdf, page 6]`).
+3. **Synthesis:** If multiple chunks contain related information, intelligently combine them into a cohesive, highly analytical, and easy-to-read response.
+4. **Language:** You must always respond in the exact same language as the user's question, regardless of the language of the source documents.
+
+# HALLUCINATION BOUNDARIES
+- **NEVER** guess, invent, or use outside knowledge to answer the specific details of the prompt.
+- If the provided context simply does not contain enough evidence to formulate a complete answer, you must clearly and explicitly state that the information is missing from the knowledge base (translating this admission into the user's chosen language). Do not attempt to fill in the blanks.
 """.strip()
 
 
@@ -97,10 +107,19 @@ class LangChainGroundedGenerator:
                 else:
                     history_messages.append(("human", content))
 
+        context_str = format_context(results)
+        
+        print("\n\n" + "="*50)
+        print("=== FINAL DATA FED TO AI ===")
+        print("="*50)
+        print(f"QUESTION (Including any extracted visual caption):\n{question}\n")
+        print(f"RETRIEVED CONTEXT CHUNKS:\n{context_str}")
+        print("="*50 + "\n\n")
+
         return self.chain.invoke(
             {
                 "question": question,
-                "context": format_context(results),
+                "context": context_str,
                 "history": history_messages,
             }
         )

@@ -59,6 +59,7 @@ class Settings:
     retrieval_dedup_enabled: bool = True
     retrieval_dedup_threshold: float = 0.05
     retrieval_candidate_multiplier: int = 3
+    retrieval_hybrid_alpha: float = 0.5
     visual_provider: str = "gemini"
     visual_output_dir: str = "output/rag_visuals"
 
@@ -105,6 +106,9 @@ class Settings:
             ),
             retrieval_candidate_multiplier=_env_int(
                 "RAG_RETRIEVAL_CANDIDATE_MULTIPLIER", 3
+            ),
+            retrieval_hybrid_alpha=_env_float(
+                "RAG_RETRIEVAL_HYBRID_ALPHA", 0.5
             ),
             visual_provider=os.getenv("RAG_VISUAL_PROVIDER", "gemini").strip(),
             visual_output_dir=os.getenv(
