@@ -10,6 +10,7 @@ from src.rag import RAGService
 
 def render_visualize_page(service: RAGService):
     st.markdown("""
+        <div class="admin-page-marker"></div>
         <div class="hero-section">
             <h1 class="hero-title">Visual Embeddings</h1>
             <p class="hero-subtitle" style="text-align: center; color: var(--text-secondary);">
