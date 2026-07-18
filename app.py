@@ -66,6 +66,20 @@ def main() -> None:
                 st.session_state.sidebar_page = "Chat"
                 st.rerun()
 
+
+        st.segmented_control(
+            "Theme Mode",
+            options=["System", "Light", "Dark"],
+            default="System",
+            format_func=lambda x: {
+                "System": ":material/desktop_windows:",
+                "Light": ":material/light_mode:",
+                "Dark": ":material/dark_mode:"
+            }.get(x, x),
+            key="app_theme_control",
+            label_visibility="collapsed",
+        )
+
     try:
         settings = get_base_settings()
         service = get_rag_service()

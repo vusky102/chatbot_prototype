@@ -619,6 +619,19 @@ body:has([data-testid="stSidebarCollapsedControl"]) .chat-empty-hero,
   padding-top: 1.25rem;
 }
 
+/* Push the theme toggle to the bottom of the sidebar */
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: calc(100vh - 4rem) !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:has([data-testid="stSegmentedControl"]) {
+  margin-top: auto !important;
+  padding-bottom: 1rem !important;
+}
+
 .nav-brand {
   display: flex;
   align-items: center;
@@ -1427,11 +1440,79 @@ hr {
 [data-testid="stSidebar"] [data-testid="stCaptionContainer"],
 [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
 [data-testid="stSidebar"] [data-testid="stCaptionContainer"] span,
-[data-testid="stSidebar"] .stCaption,
 [data-testid="stSidebar"] small {
   color: #5f6368 !important;
   -webkit-text-fill-color: #5f6368 !important;
   opacity: 1 !important;
+}
+
+/* Grok-style Zero State UI */
+.chat-empty-hero {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.chat-empty-title {
+  font-size: 2.25rem !important;
+  font-weight: 700 !important;
+  color: var(--md-sys-color-on-surface) !important;
+  margin-bottom: 2rem !important;
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.prompt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  max-width: 600px;
+  width: 100%;
+}
+
+.prompt-card {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1rem 1.25rem;
+  background: var(--md-sys-color-surface-container) !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.prompt-card:hover {
+  background: var(--md-sys-color-surface-container-high) !important;
+  border-color: var(--md-sys-color-outline) !important;
+  transform: translateY(-2px);
+}
+
+.prompt-card:active {
+  transform: translateY(0);
+}
+
+.prompt-icon {
+  font-family: "Material Symbols Outlined" !important;
+  font-size: 24px;
+  color: var(--md-sys-color-on-surface-variant);
+  margin-bottom: 0.75rem;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+.prompt-text {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .prompt-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 """
@@ -1448,6 +1529,13 @@ def inject_styles() -> None:
             theme_type = "dark"
     except Exception:
         pass
+
+    # Override with user preference if present
+    app_theme_control = st.session_state.get("app_theme_control", "System")
+    if app_theme_control == "Light":
+        theme_type = "light"
+    elif app_theme_control == "Dark":
+        theme_type = "dark"
 
     theme_vars = ""
     if theme_type == "dark":
@@ -1671,6 +1759,64 @@ def inject_styles() -> None:
         [data-testid="stBottomBlockContainer"] {
           background: #1a1c1e !important;
           background-color: #1a1c1e !important;
+        }
+        
+        /* Sidebar buttons */
+        [data-testid="stSidebar"] .stButton > button,
+        [data-testid="stSidebar"] .stButton > button[kind="primary"],
+        [data-testid="stSidebar"] .stButton > button[kind="secondary"] {
+          background: #252830 !important;
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+          border-color: #444950 !important;
+        }
+        [data-testid="stSidebar"] .stButton > button:hover,
+        [data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
+          background: #2d3138 !important;
+          border-color: #a8c7fa !important;
+        }
+        
+        /* Primary (Active) Sidebar button accent */
+        [data-testid="stSidebar"] .stButton > button[kind="primary"],
+        [data-testid="stSidebar"] .stButton > button[data-testid="stBaseButton-primary"] {
+          background: #0842a0 !important;
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+          border-color: #0b57d0 !important;
+        }
+        [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover,
+        [data-testid="stSidebar"] .stButton > button[data-testid="stBaseButton-primary"]:hover {
+          background: #062e6f !important;
+          border-color: #a8c7fa !important;
+        }
+        
+        /* Input Placeholders */
+        .block-container:has(.admin-page-marker) :is(
+          [data-testid="stTextInput"],
+          [data-testid="stNumberInput"],
+          [data-testid="stTextArea"]
+        ) :is(input, textarea)::placeholder {
+          color: #8c9096 !important;
+          -webkit-text-fill-color: #8c9096 !important;
+        }
+        
+        /* Checkboxes/Toggles Label & Bg */
+        .block-container:has(.admin-page-marker) [data-testid="stCheckbox"]:not(:has(svg)) [data-testid="stWidgetLabel"],
+        .block-container:has(.admin-page-marker) [data-testid="stCheckbox"]:not(:has(svg)) [data-testid="stWidgetLabel"] p {
+          color: #e3e3e3 !important;
+          -webkit-text-fill-color: #e3e3e3 !important;
+        }
+        .block-container:has(.admin-page-marker) [data-testid="stCheckbox"]:not(:has(svg)) > *:not([data-selected]) > div:has(> div):not([data-testid="stWidgetLabel"]) {
+          background-color: #444950 !important;
+          border-color: #303134 !important;
+        }
+        
+        /* Inline Code Blocks in Captions */
+        .block-container:has(.admin-page-marker) [data-testid="stCaptionContainer"] code,
+        .block-container:has(.admin-page-marker) .stCaption code {
+          background: rgba(168, 199, 250, 0.15) !important;
+          color: #a8c7fa !important;
+          -webkit-text-fill-color: #a8c7fa !important;
         }
         """
 

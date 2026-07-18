@@ -723,7 +723,13 @@ def render_chat_page(service: RAGService) -> None:
         st.markdown(
             (
                 '<div class="chat-empty-hero">'
-                '<div class="chat-empty-title">Hello</div>'
+                '<div class="chat-empty-title">What\'s on your mind?</div>'
+                '<div class="prompt-grid">'
+                '<div class="prompt-card"><div class="prompt-icon">description</div><div class="prompt-text">Summarize a document</div></div>'
+                '<div class="prompt-card"><div class="prompt-icon">bar_chart</div><div class="prompt-text">Compare financial reports</div></div>'
+                '<div class="prompt-card"><div class="prompt-icon">image</div><div class="prompt-text">Extract text from an image</div></div>'
+                '<div class="prompt-card"><div class="prompt-icon">search</div><div class="prompt-text">Search technical terms</div></div>'
+                '</div>'
                 "</div>"
             ),
             unsafe_allow_html=True,
@@ -740,7 +746,13 @@ def render_chat_page(service: RAGService) -> None:
             st.markdown(
                 (
                     '<div class="chat-empty-hero is-docking">'
-                    '<div class="chat-empty-title">Hello</div>'
+                    '<div class="chat-empty-title">What\'s on your mind?</div>'
+                    '<div class="prompt-grid">'
+                    '<div class="prompt-card"><div class="prompt-icon">description</div><div class="prompt-text">Summarize a document</div></div>'
+                    '<div class="prompt-card"><div class="prompt-icon">bar_chart</div><div class="prompt-text">Compare financial reports</div></div>'
+                    '<div class="prompt-card"><div class="prompt-icon">image</div><div class="prompt-text">Extract text from an image</div></div>'
+                    '<div class="prompt-card"><div class="prompt-icon">search</div><div class="prompt-text">Search technical terms</div></div>'
+                    '</div>'
                     "</div>"
                 ),
                 unsafe_allow_html=True,
