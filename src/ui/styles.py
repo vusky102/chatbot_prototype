@@ -402,44 +402,44 @@ body:has([data-testid="stSidebarCollapsedControl"]) .chat-empty-hero,
 
 /* Debug retrieval expanders — Streamlit header uses dark secondaryBg;
    admin CSS forces dark text, so force a light header for contrast. */
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] {
+.block-container [data-testid="stExpander"] {
   background: #ffffff !important;
   border: 1px solid #dadce0 !important;
   border-radius: 10px !important;
   overflow: hidden;
 }
 
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] details {
+.block-container [data-testid="stExpander"] details {
   background: #ffffff !important;
 }
 
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] summary,
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader,
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderDetails"],
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderIcon"] {
+.block-container [data-testid="stExpander"] summary,
+.block-container [data-testid="stExpander"] .streamlit-expanderHeader,
+.block-container [data-testid="stExpander"] [data-testid="stExpanderDetails"],
+.block-container [data-testid="stExpander"] [data-testid="stExpanderIcon"] {
   background: #f1f3f4 !important;
   background-color: #f1f3f4 !important;
   color: #202124 !important;
   -webkit-text-fill-color: #202124 !important;
 }
 
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] summary :is(p, span, div, label),
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader :is(p, span, div, label),
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] summary svg,
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader svg,
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderToggleIcon"] svg {
+.block-container [data-testid="stExpander"] summary :is(p, span, div, label),
+.block-container [data-testid="stExpander"] .streamlit-expanderHeader :is(p, span, div, label),
+.block-container [data-testid="stExpander"] summary svg,
+.block-container [data-testid="stExpander"] .streamlit-expanderHeader svg,
+.block-container [data-testid="stExpander"] [data-testid="stExpanderToggleIcon"] svg {
   color: #202124 !important;
   -webkit-text-fill-color: #202124 !important;
   fill: #202124 !important;
   opacity: 1 !important;
 }
 
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] summary,
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+.block-container [data-testid="stExpander"] summary,
+.block-container [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
   border-bottom: 1px solid #dadce0 !important;
 }
 
-.block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stMarkdownContainer"] :is(p, span, li, h1, h2, h3, h4) {
+.block-container [data-testid="stExpander"] [data-testid="stMarkdownContainer"] :is(p, span, li, h1, h2, h3, h4) {
   color: #202124 !important;
   -webkit-text-fill-color: #202124 !important;
 }
@@ -1697,6 +1697,15 @@ def inject_styles() -> None:
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
         }
+        .upload-queue-chip {
+          background: #111111 !important;
+          border-color: #333333 !important;
+          color: #ffffff !important;
+        }
+        .upload-queue-chip-name {
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
+        }
         /* Admin card */
         .block-container:has(.admin-page-marker) div[data-testid="stHorizontalBlock"]:has(.doc-row) {
           background: #111111 !important;
@@ -1709,36 +1718,36 @@ def inject_styles() -> None:
           color: #ffffff !important;
         }
         /* Expander overrides */
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] {
+        .block-container [data-testid="stExpander"] {
           background: #111111 !important;
           border-color: #333333 !important;
         }
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] details {
+        .block-container [data-testid="stExpander"] details {
           background: #111111 !important;
         }
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary,
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader,
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderDetails"],
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderIcon"] {
+        .block-container [data-testid="stExpander"] summary,
+        .block-container [data-testid="stExpander"] .streamlit-expanderHeader,
+        .block-container [data-testid="stExpander"] [data-testid="stExpanderDetails"],
+        .block-container [data-testid="stExpander"] [data-testid="stExpanderIcon"] {
           background: #000000 !important;
           background-color: #000000 !important;
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
         }
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary :is(p, span, div, label),
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader :is(p, span, div, label),
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary svg,
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] .streamlit-expanderHeader svg,
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderToggleIcon"] svg {
+        .block-container [data-testid="stExpander"] summary :is(p, span, div, label),
+        .block-container [data-testid="stExpander"] .streamlit-expanderHeader :is(p, span, div, label),
+        .block-container [data-testid="stExpander"] summary svg,
+        .block-container [data-testid="stExpander"] .streamlit-expanderHeader svg,
+        .block-container [data-testid="stExpander"] [data-testid="stExpanderToggleIcon"] svg {
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
           fill: #ffffff !important;
         }
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] summary,
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+        .block-container [data-testid="stExpander"] summary,
+        .block-container [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
           border-bottom-color: #333333 !important;
         }
-        .block-container:has(.admin-page-marker) [data-testid="stExpander"] [data-testid="stMarkdownContainer"] :is(p, span, li, h1, h2, h3, h4) {
+        .block-container [data-testid="stExpander"] [data-testid="stMarkdownContainer"] :is(p, span, li, h1, h2, h3, h4) {
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
         }

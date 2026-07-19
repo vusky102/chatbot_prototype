@@ -45,24 +45,27 @@ class StreamlitStdoutCapture:
             self.buffer = "...\n" + self.buffer[-29900:]
             
         safe_html = html.escape(self.buffer)
-        html_code = f'''
-        <div style="
-            background-color: #0d1117; 
-            color: #c9d1d9; 
-            font-family: Consolas, 'Courier New', monospace; 
-            font-size: 13px; 
-            padding: 16px; 
-            border-radius: 8px; 
-            height: 350px; 
-            overflow-y: auto;
-            white-space: pre-wrap;
-            border: 1px solid #30363d;
-            margin-top: 16px;
-            margin-bottom: 24px;
-            display: flex;
-            flex-direction: column-reverse;
-        "><div style="margin-bottom: auto;">{safe_html}</div></div>
-        '''
+        html_code = f'''<style>
+#terminal-output-box, #terminal-output-box * {{
+    color: #c9d1d9 !important;
+    -webkit-text-fill-color: #c9d1d9 !important;
+}}
+</style>
+<div id="terminal-output-box" class="terminal-output" style="
+    background-color: #0d1117; 
+    font-family: Consolas, 'Courier New', monospace; 
+    font-size: 13px; 
+    padding: 16px; 
+    border-radius: 8px; 
+    height: 350px; 
+    overflow-y: auto;
+    white-space: pre-wrap;
+    border: 1px solid #30363d;
+    margin-top: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column-reverse;
+"><div style="margin-bottom: auto;">{safe_html}</div></div>'''
         self.placeholder.markdown(html_code, unsafe_allow_html=True)
 
     def flush(self) -> None:
