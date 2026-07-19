@@ -362,6 +362,15 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
         st.info("No documents indexed yet. Upload a PDF above to get started.")
         return
 
+    search_query = st.text_input(
+        "Search documents by filename",
+        placeholder="Filter...",
+        key="admin_search_docs",
+    )
+    
+    if search_query:
+        documents = [doc for doc in documents if search_query.lower() in doc.lower()]
+
     def _delete_document(source_name: str) -> None:
         try:
             with st.spinner(f"Deleting {source_name}..."):
@@ -384,28 +393,59 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
             }
             st.rerun()
 
-    for name in documents:
-        safe_name = html.escape(name)
-        name_col, action_col = st.columns([1, 0.08], vertical_alignment="center")
-        with name_col:
-            st.markdown(
-                (
-                    '<div class="doc-row">'
-                    '<span class="doc-row-icon">description</span>'
-                    f'<span class="doc-row-name">{safe_name}</span>'
-                    "</div>"
-                ),
-                unsafe_allow_html=True,
-            )
-        with action_col:
-            if st.button(
-                "",
-                key=f"del_{name}",
-                help=f"Delete {name}",
-                icon=":material/delete:",
-                type="tertiary",
-            ):
-                _delete_document(name)
+    if not documents:
+        st.info("No documents match your search.")
+    else:
+        items_per_page = 10
+        total_pages = max(1, (len(documents) - 1) // items_per_page + 1)
+        
+        if "admin_docs_page" not in st.session_state:
+            st.session_state.admin_docs_page = 1
+            
+        if st.session_state.admin_docs_page > total_pages:
+            st.session_state.admin_docs_page = total_pages
+            
+        start_idx = (st.session_state.admin_docs_page - 1) * items_per_page
+        end_idx = start_idx + items_per_page
+        paginated_docs = documents[start_idx:end_idx]
+
+        for name in paginated_docs:
+            safe_name = html.escape(name)
+            name_col, action_col = st.columns([1, 0.08], vertical_alignment="center")
+            with name_col:
+                st.markdown(
+                    (
+                        '<div class="doc-row">'
+                        '<span class="doc-row-icon">description</span>'
+                        f'<span class="doc-row-name">{safe_name}</span>'
+                        "</div>"
+                    ),
+                    unsafe_allow_html=True,
+                )
+            with action_col:
+                if st.button(
+                    "",
+                    key=f"del_{name}",
+                    help=f"Delete {name}",
+                    icon=":material/delete:",
+                    type="tertiary",
+                ):
+                    _delete_document(name)
+
+        # Pagination controls bottom
+        if total_pages > 1:
+            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+            prev_col, page_col, next_col = st.columns([1, 2, 1], vertical_alignment="center")
+            with prev_col:
+                if st.button("Previous", key="prev_page_bot", disabled=st.session_state.admin_docs_page <= 1, use_container_width=True):
+                    st.session_state.admin_docs_page -= 1
+                    st.rerun()
+            with page_col:
+                st.markdown(f"<div style='text-align: center; color: #8b949e; font-size: 0.9em;'>Page {st.session_state.admin_docs_page} of {total_pages}</div>", unsafe_allow_html=True)
+            with next_col:
+                if st.button("Next", key="next_page_bot", disabled=st.session_state.admin_docs_page >= total_pages, use_container_width=True):
+                    st.session_state.admin_docs_page += 1
+                    st.rerun()
 
     st.divider()
     manual_name = st.text_input(
