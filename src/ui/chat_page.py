@@ -705,6 +705,46 @@ def _render_source_images(sources: list[dict]) -> None:
 
 def render_chat_page(service: RAGService) -> None:
     """Chat UI: message history, composer, thinking state, and RAG answers."""
+    
+    # Inject background particle animation
+    particle_html = """
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
+    <style>
+      body, html { margin: 0; padding: 0; overflow: hidden; background-color: transparent !important; }
+      #tsparticles { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: -1; }
+    </style>
+    <div id="tsparticles"></div>
+    <script>
+      tsParticles.load("tsparticles", {
+        fpsLimit: 60,
+        particles: {
+          number: { value: 40, density: { enable: true, value_area: 800 } },
+          color: { value: "#0044ff" },
+          shape: { type: "circle" },
+          opacity: { value: 0.3, random: true, anim: { enable: true, speed: 1, opacity_min: 0.1, sync: false } },
+          size: { value: 6, random: true, anim: { enable: true, speed: 2, size_min: 2, sync: false } },
+          links: { enable: true, distance: 150, color: "#0044ff", opacity: 0.15, width: 1 },
+          move: { enable: true, speed: 1, direction: "none", random: true, straight: false, out_mode: "out", bounce: false }
+        },
+        retina_detect: true
+      });
+      
+      // Make the Streamlit iframe cover the entire background
+      const frame = window.frameElement;
+      if (frame) {
+          frame.style.position = 'fixed';
+          frame.style.top = '0';
+          frame.style.left = '0';
+          frame.style.width = '100vw';
+          frame.style.height = '100vh';
+          frame.style.zIndex = '0'; // Behind chat but above base background
+          frame.style.pointerEvents = 'none'; // Allow clicks to pass through to chat
+          frame.parentElement.style.position = 'fixed'; // Fix the container too
+      }
+    </script>
+    """
+    components.html(particle_html, height=0, width=0)
+
     if "messages" not in st.session_state:
         st.session_state.messages = []
     if "msg_seq" not in st.session_state:
