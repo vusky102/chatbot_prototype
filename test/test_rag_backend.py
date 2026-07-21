@@ -119,6 +119,7 @@ class VectorStoreTests(unittest.TestCase):
         store.index.delete.assert_called_once_with(
             ids=["id-1", "id-3"],
             namespace="training-gd4",
+            async_req=True,
         )
 
     def test_search_deduplicates_eventually_consistent_matches(self):

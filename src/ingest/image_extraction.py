@@ -11,6 +11,7 @@ Usage:
 import os
 import argparse
 import base64
+import concurrent.futures
 import json
 import re
 from pathlib import Path
@@ -379,58 +380,69 @@ def process_pdf(pdf_path, output_dir, ai_client, model, provider, render_dpi=150
     total_embedded = 0
     total_ai_extracted = 0
 
-    for page_num in range(len(doc)):
-        page = doc[page_num]
-        print(f"\n  Page {page_num + 1}/{len(doc)}")
+    batch_size = 5
+    for i in range(0, len(doc), batch_size):
+        batch = range(i, min(i + batch_size, len(doc)))
 
-        # Phase 1: Extract embedded raster images (no AI)
-        embedded = extract_embedded_images(doc, page, page_num, pdf_output_dir)
-        total_embedded += embedded
+        tasks = []
+        for page_num in batch:
+            page = doc[page_num]
+            print(f"\n  Page {page_num + 1}/{len(doc)}")
 
-        # Phase 2: AI-powered visual element detection
-        print(f"    AI analyzing...", end="", flush=True)
-        try:
+            # Phase 1: Extract embedded raster images (no AI)
+            embedded = extract_embedded_images(doc, page, page_num, pdf_output_dir)
+            total_embedded += embedded
+
+            # Phase 2: AI-powered visual element detection prep
             png_bytes, img_w, img_h = render_page_to_png(page, target_dpi=render_dpi)
+            tasks.append((page_num, png_bytes, img_w, img_h))
 
+        print(f"    AI analyzing batch of {len(tasks)} pages...", flush=True)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             if provider == "gemini":
-                analysis = analyze_page_gemini(ai_client, model, png_bytes, img_w, img_h)
+                futures = {executor.submit(analyze_page_gemini, ai_client, model, t[1], t[2], t[3]): t for t in tasks}
             else:
-                analysis = analyze_page_openai(ai_client, model, png_bytes, img_w, img_h)
+                futures = {executor.submit(analyze_page_openai, ai_client, model, t[1], t[2], t[3]): t for t in tasks}
 
-            if not analysis.get("contains_non_text_elements") or not analysis.get("elements"):
-                print(" No visual elements detected.")
-                continue
+            for future in concurrent.futures.as_completed(futures):
+                t = futures[future]
+                page_num, _, img_w, img_h = t
+                page = doc[page_num]
+                try:
+                    analysis = future.result()
+                    if not analysis.get("contains_non_text_elements") or not analysis.get("elements"):
+                        print(f"    [Page {page_num + 1}] No visual elements detected.")
+                        continue
 
-            elements = analysis["elements"]
-            print(f" Found {len(elements)} element(s).")
+                    elements = analysis["elements"]
+                    print(f"    [Page {page_num + 1}] Found {len(elements)} element(s).")
 
-            for idx, element in enumerate(elements):
-                el_type = element.get("type", "other").lower()
-                box_2d = element.get("box_2d")
-                desc = element.get("description", "")
+                    for idx, element in enumerate(elements):
+                        el_type = element.get("type", "other").lower()
+                        box_2d = element.get("box_2d")
+                        desc = element.get("description", "")
 
-                if not box_2d or len(box_2d) != 4:
-                    print(f"    - Element {idx+1}: Invalid box {box_2d}. Skipping.")
-                    continue
+                        if not box_2d or len(box_2d) != 4:
+                            print(f"    - Page {page_num + 1} Element {idx+1}: Invalid box {box_2d}. Skipping.")
+                            continue
 
-                # Validate box values are reasonable
-                ymin, xmin, ymax, xmax = box_2d
-                if ymin >= ymax or xmin >= xmax:
-                    print(f"    - Element {idx+1}: Inverted box {box_2d}. Skipping.")
-                    continue
+                        ymin, xmin, ymax, xmax = box_2d
+                        if ymin >= ymax or xmin >= xmax:
+                            print(f"    - Page {page_num + 1} Element {idx+1}: Inverted box {box_2d}. Skipping.")
+                            continue
 
-                out_name = f"page_{page_num + 1}_{el_type}_{idx + 1}.png"
-                out_path = pdf_output_dir / out_name
+                        out_name = f"page_{page_num + 1}_{el_type}_{idx + 1}.png"
+                        out_path = pdf_output_dir / out_name
 
-                success = crop_and_save_element(
-                    page, box_2d, img_w, img_h, str(out_path), dpi=crop_dpi
-                )
-                if success:
-                    print(f"    -> Saved: {out_name} ({desc[:60]})")
-                    total_ai_extracted += 1
+                        success = crop_and_save_element(
+                            page, box_2d, img_w, img_h, str(out_path), dpi=crop_dpi
+                        )
+                        if success:
+                            print(f"    -> Saved: {out_name} ({desc[:60]})")
+                            total_ai_extracted += 1
 
-        except Exception as e:
-            print(f" Error: {e}")
+                except Exception as e:
+                    print(f"    [Page {page_num + 1}] Error: {e}")
 
     print(f"\n  Summary for {pdf_path.name}:")
     print(f"    Embedded images extracted: {total_embedded}")

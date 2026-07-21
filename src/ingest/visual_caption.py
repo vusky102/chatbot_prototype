@@ -1,4 +1,5 @@
 import base64
+import concurrent.futures
 import hashlib
 import json
 import mimetypes
@@ -142,17 +143,31 @@ def caption_visuals(
     page_texts = page_texts or {}
     chunks = []
     changed = False
+
+    tasks = []
     for index, image_path in enumerate(image_paths):
-        caption = cache.get(image_path.name, "")
-        if not caption and captioner is not None:
+        tasks.append({"index": index, "path": image_path, "caption": cache.get(image_path.name, "")})
+
+    def _run_caption(task):
+        if not task["caption"] and captioner is not None:
             try:
-                caption = captioner.caption(image_path)
-                if caption:
-                    cache[image_path.name] = caption
-                    changed = True
+                task["caption"] = captioner.caption(task["path"])
             except Exception as exc:
-                print(f"  -> Warning: caption failed for {image_path.name}: {exc}")
-                caption = ""
+                print(f"  -> Warning: caption failed for {task['path'].name}: {exc}")
+                task["caption"] = ""
+        return task
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        results = list(executor.map(_run_caption, tasks))
+
+    for task in sorted(results, key=lambda x: x["index"]):
+        index = task["index"]
+        image_path = task["path"]
+        caption = task["caption"]
+
+        if caption and caption != cache.get(image_path.name, ""):
+            cache[image_path.name] = caption
+            changed = True
 
         page, content_type = _image_metadata(image_path)
         page_excerpt = ""

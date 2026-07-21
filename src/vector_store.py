@@ -44,7 +44,7 @@ def _metadata_to_search_result(
 class PineconeVectorStore:
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.client = Pinecone(api_key=settings.pinecone_api_key)
+        self.client = Pinecone(api_key=settings.pinecone_api_key, pool_threads=30)
         self.index = None
         self.bm25 = BM25Encoder().default()
 
@@ -79,7 +79,10 @@ class PineconeVectorStore:
                     f"OPENAI_EMBEDDING_DIMENSION is "
                     f"{self.settings.embedding_dimension}"
                 )
-        self.index = self.client.Index(self.settings.pinecone_index_name)
+        self.index = self.client.Index(
+            self.settings.pinecone_index_name,
+            pool_threads=30
+        )
         return self
 
     def _wait_until_ready(self, timeout_seconds: int = 120) -> None:
@@ -118,16 +121,20 @@ class PineconeVectorStore:
 
         deleted = 0
         if ids_to_delete:
-            for batch in _batches(
-                [{"id": vector_id} for vector_id in ids_to_delete],
-                1000,
-            ):
+            async_results = [
                 self.index.delete(
                     ids=[item["id"] for item in batch],
                     namespace=self.settings.pinecone_namespace,
+                    async_req=True,
                 )
-                deleted += len(batch)
-            return deleted
+                for batch in _batches(
+                    [{"id": vector_id} for vector_id in ids_to_delete],
+                    1000,
+                )
+            ]
+            for res in async_results:
+                res.get()
+            return len(ids_to_delete)
 
         # Fallback: metadata filter (supported on newer serverless indexes).
         try:
@@ -169,11 +176,18 @@ class PineconeVectorStore:
             }
             for chunk, vector, sparse in zip(chunks, vectors, sparse_vectors)
         ]
-        for batch in _batches(records, batch_size):
+        async_results = [
             self.index.upsert(
                 vectors=batch,
                 namespace=self.settings.pinecone_namespace,
+                async_req=True,
             )
+            for batch in _batches(records, batch_size)
+        ]
+        
+        for res in async_results:
+            res.get()
+            
         return len(records)
 
     def search(
