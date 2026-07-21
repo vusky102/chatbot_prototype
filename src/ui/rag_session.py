@@ -28,6 +28,7 @@ def _cached_rag_service(
     retrieval_candidate_multiplier: int,
     retrieval_hybrid_alpha: float,
     visual_provider: str,
+    vector_db_backend: str,
 ) -> RAGService:
     """Build a RAGService keyed by the admin tuning fingerprint."""
     base = get_base_settings()
@@ -44,6 +45,7 @@ def _cached_rag_service(
         retrieval_candidate_multiplier=retrieval_candidate_multiplier,
         retrieval_hybrid_alpha=retrieval_hybrid_alpha,
         visual_provider=visual_provider,
+        vector_db_backend=vector_db_backend,
     )
     settings.validate_for_vector_store()
     return RAGService(settings)

@@ -16,6 +16,7 @@ except Exception:
 from src.config import Settings
 from src.ingest.ahash import compute_ahash, hamming_distance
 from src.models import DocumentChunk, SearchResult
+from src.vector_store_base import VectorStoreBackend
 
 
 # aHash is 64 bits; used to turn Hamming distance into a [0, 1] similarity score.
@@ -41,9 +42,13 @@ def _metadata_to_search_result(
     )
 
 
-class PineconeVectorStore:
+class PineconeVectorStore(VectorStoreBackend):
+    @property
+    def backend_name(self) -> str:
+        return "pinecone"
+
     def __init__(self, settings: Settings):
-        self.settings = settings
+        super().__init__(settings)
         self.client = Pinecone(api_key=settings.pinecone_api_key, pool_threads=30)
         self.index = None
         self.bm25 = BM25Encoder().default()

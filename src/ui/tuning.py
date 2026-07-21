@@ -19,6 +19,7 @@ TUNING_KEYS = (
     "retrieval_candidate_multiplier",
     "retrieval_hybrid_alpha",
     "visual_provider",
+    "vector_db_backend",
 )
 
 
@@ -79,4 +80,8 @@ def validate_tuning(values: dict[str, object]) -> str | None:
     provider = str(values["visual_provider"]).strip().lower()
     if provider not in {"gemini", "openai"}:
         return "Visual provider must be gemini or openai."
+
+    backend = str(values.get("vector_db_backend", "auto")).strip().lower()
+    if backend not in {"pinecone", "chromadb", "auto"}:
+        return "Vector DB backend must be pinecone, chromadb, or auto."
     return None

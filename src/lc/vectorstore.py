@@ -1,7 +1,8 @@
-"""Stage 2 — LangChain VectorStore adapter over the Pinecone SDK client.
+"""LangChain VectorStore adapter — backend-agnostic.
 
-Python 3.14 cannot install langchain-pinecone yet, so we implement the
-LangChain VectorStore interface on top of our existing Pinecone SDK store.
+Works on top of any ``VectorStoreBackend`` (Pinecone *or* ChromaDB).
+The old ``LangChainPineconeVectorStore`` name is kept as an alias for
+backwards compatibility.
 """
 
 from __future__ import annotations
@@ -16,11 +17,12 @@ from langchain_core.vectorstores import VectorStore
 from src.config import Settings
 from src.lc.documents import chunk_to_document
 from src.models import DocumentChunk
-from src.vector_store import PineconeVectorStore
+from src.vector_store_base import VectorStoreBackend
+from src.vector_store_factory import create_vector_store
 
 
-class LangChainPineconeVectorStore(VectorStore):
-    """LangChain-compatible vector store backed by `PineconeVectorStore`."""
+class LangChainVectorStoreAdapter(VectorStore):
+    """LangChain-compatible vector store backed by any ``VectorStoreBackend``."""
 
     def __init__(
         self,
@@ -28,12 +30,13 @@ class LangChainPineconeVectorStore(VectorStore):
         embedding: Embeddings,
         *,
         create_if_missing: bool = False,
-        store: PineconeVectorStore | None = None,
+        store: VectorStoreBackend | None = None,
     ):
         self._settings = settings
         self._embedding = embedding
-        self._store = store or PineconeVectorStore(settings).connect(
-            create_if_missing=create_if_missing
+        self._store = store or create_vector_store(
+            settings,
+            backend=settings.vector_db_backend,
         )
 
     @property
@@ -42,8 +45,8 @@ class LangChainPineconeVectorStore(VectorStore):
         return self._embedding
 
     @property
-    def store(self) -> PineconeVectorStore:
-        """Underlying Pinecone SDK wrapper (`src.vector_store`)."""
+    def store(self) -> VectorStoreBackend:
+        """Underlying vector store backend (Pinecone or ChromaDB)."""
         return self._store
 
     @classmethod
@@ -55,7 +58,7 @@ class LangChainPineconeVectorStore(VectorStore):
         *,
         settings: Settings | None = None,
         **kwargs: Any,
-    ) -> "LangChainPineconeVectorStore":
+    ) -> "LangChainVectorStoreAdapter":
         """Create a store and index the provided texts (LangChain API)."""
         if settings is None:
             raise ValueError("settings is required")
@@ -127,15 +130,18 @@ class LangChainPineconeVectorStore(VectorStore):
     ) -> list[tuple[Document, float]]:
         """Return (document, score) pairs above an optional score threshold."""
         query_vector = self._embedding.embed_query(query)
+
+        # Hybrid BM25 is only relevant for Pinecone; ChromaDB ignores these.
         alpha = kwargs.get("alpha", self._settings.retrieval_hybrid_alpha)
-        
+        query_text = query if self._store.backend_name == "pinecone" else ""
+
         results = self._store.search(
             query_vector=query_vector,
             top_k=k,
             score_threshold=score_threshold,
             metadata_filter=metadata_filter,
             include_values=include_values,
-            query_text=query,
+            query_text=query_text,
             alpha=alpha,
         )
         paired: list[tuple[Document, float]] = []
@@ -172,7 +178,7 @@ class LangChainPineconeVectorStore(VectorStore):
         return self._store.delete_source(source_file)
 
     def get_stats(self) -> dict[str, object]:
-        """Return Pinecone index statistics for this namespace."""
+        """Return index/collection statistics."""
         return self._store.get_stats()
 
     def search_by_ahash(self, image_path_or_hash: str, max_distance: int = 5):
@@ -181,3 +187,7 @@ class LangChainPineconeVectorStore(VectorStore):
             image_path_or_hash,
             max_distance=max_distance,
         )
+
+
+# Backwards-compatible alias.
+LangChainPineconeVectorStore = LangChainVectorStoreAdapter

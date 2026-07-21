@@ -162,6 +162,43 @@ def _render_tuning_tab(base_settings: Settings) -> None:
         help="Minimum cosine distance between kept chunks (higher = stricter).",
     )
 
+    st.subheader("Vector Database")
+
+    _BACKEND_OPTIONS = ["pinecone", "chromadb"]
+    _BACKEND_LABELS = {
+        "pinecone": "☁️  Pinecone (cloud · hybrid BM25+dense)",
+        "chromadb": "💾  ChromaDB (local · dense-only)",
+    }
+    current_backend = str(tuning.get("vector_db_backend", "auto")).lower()
+    # Map "auto" to whatever default index for UI purposes.
+    if current_backend not in _BACKEND_OPTIONS:
+        current_backend = "pinecone"
+    backend_index = _BACKEND_OPTIONS.index(current_backend)
+
+    selected_backend = st.selectbox(
+        "Database backend",
+        options=_BACKEND_OPTIONS,
+        index=backend_index,
+        format_func=lambda b: _BACKEND_LABELS.get(b, b),
+        help=(
+            "**Pinecone**: Cloud-hosted with hybrid BM25+dense search. "
+            "Requires a valid API key.\n\n"
+            "**ChromaDB**: Local persistent vector DB. Dense semantic search only. "
+            "No API key needed."
+        ),
+    )
+    tuning["vector_db_backend"] = selected_backend
+
+    if selected_backend == "chromadb":
+        st.info(
+            "📦 ChromaDB stores data locally in `./chroma_db/`. "
+            "Hybrid BM25 search is not available — retrieval uses dense "
+            "semantic matching only.",
+            icon="ℹ️",
+        )
+    else:
+        st.caption("Using cloud Pinecone with hybrid BM25+dense retrieval.")
+
     st.subheader("Visual ingest")
     tuning["visual_provider"] = st.selectbox(
         "Visual provider",
@@ -183,12 +220,20 @@ def _render_tuning_tab(base_settings: Settings) -> None:
             else:
                 st.session_state.rag_tuning = tuning
                 clear_rag_service_cache()
+                # Force document list refresh for new backend.
+                st.session_state.pop("admin_documents", None)
+                st.session_state.pop("admin_documents_error", None)
+                st.session_state.pop("admin_documents_stats", None)
                 st.success("Settings applied.")
                 st.rerun()
     with reset_col:
         if st.button("Reset to .env defaults", width="stretch"):
             st.session_state.rag_tuning = tuning_from_settings(base_settings)
             clear_rag_service_cache()
+            # Force document list refresh.
+            st.session_state.pop("admin_documents", None)
+            st.session_state.pop("admin_documents_error", None)
+            st.session_state.pop("admin_documents_stats", None)
             st.rerun()
 
 
@@ -347,10 +392,17 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
             if vector_count is not None
             else ""
         )
-        st.caption(
-            f"`{base_settings.pinecone_index_name}` · "
-            f"`{base_settings.pinecone_namespace}`{count_label}"
-        )
+        # Show backend-aware index info.
+        effective = get_effective_settings(base_settings)
+        backend = effective.vector_db_backend
+        if backend == "chromadb":
+            index_label = "💾 ChromaDB · `rag-chatbot`"
+        else:
+            index_label = (
+                f"☁️ Pinecone · `{base_settings.pinecone_index_name}` · "
+                f"`{base_settings.pinecone_namespace}`"
+            )
+        st.caption(f"{index_label}{count_label}")
 
     error = st.session_state.get("admin_documents_error")
     if error:

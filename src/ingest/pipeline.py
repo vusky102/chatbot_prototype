@@ -6,7 +6,7 @@ from src.ingest.image_extraction import extract_images
 from src.ingest.pdf_text_extraction import extract_text_from_pdf
 from src.ingest.visual_caption import caption_visuals
 from src.lc.embeddings import build_embeddings
-from src.lc.vectorstore import LangChainPineconeVectorStore
+from src.lc.vectorstore import LangChainVectorStoreAdapter
 from src.models import DocumentChunk
 
 
@@ -86,7 +86,7 @@ def ingest_pdf(
         raise RuntimeError(f"No content could be extracted from {pdf_path}")
 
     embeddings = build_embeddings(settings)
-    store = LangChainPineconeVectorStore(
+    store = LangChainVectorStoreAdapter(
         settings,
         embeddings,
         create_if_missing=True,

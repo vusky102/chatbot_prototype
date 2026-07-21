@@ -2,6 +2,7 @@
 .env
 
 # Generated / runtime
+chroma_db/
 generated_audio/
 output/
 docs/Training_data_GD4/

@@ -9,6 +9,7 @@ __all__ = [
     "build_embeddings",
     "LangChainSemanticRetriever",
     "chunk_extracted_text_lc",
+    "LangChainVectorStoreAdapter",
     "LangChainPineconeVectorStore",
 ]
 
@@ -30,6 +31,10 @@ def __getattr__(name: str):
         from src.lc.splitters import chunk_extracted_text_lc
 
         return chunk_extracted_text_lc
+    if name == "LangChainVectorStoreAdapter":
+        from src.lc.vectorstore import LangChainVectorStoreAdapter
+
+        return LangChainVectorStoreAdapter
     if name == "LangChainPineconeVectorStore":
         from src.lc.vectorstore import LangChainPineconeVectorStore
 

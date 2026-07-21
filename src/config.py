@@ -62,6 +62,7 @@ class Settings:
     retrieval_hybrid_alpha: float = 0.5
     visual_provider: str = "gemini"
     visual_output_dir: str = "output/rag_visuals"
+    vector_db_backend: str = "auto"
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -114,6 +115,7 @@ class Settings:
             visual_output_dir=os.getenv(
                 "RAG_VISUAL_OUTPUT_DIR", "output/rag_visuals"
             ).strip(),
+            vector_db_backend="auto",
         )
 
     def validate_for_vector_store(self) -> None:
@@ -122,7 +124,8 @@ class Settings:
         missing = []
         if not self.embedding_api_key:
             missing.append("OPENAI_EMBEDDING_API_KEY or OPENAI_API_KEY")
-        if not self.pinecone_api_key:
+        # Only require Pinecone key when backend explicitly set to pinecone
+        if self.vector_db_backend == "pinecone" and not self.pinecone_api_key:
             missing.append("PINECONE_API_KEY")
         if missing:
             raise RuntimeError(

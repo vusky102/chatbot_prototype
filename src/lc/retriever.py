@@ -1,4 +1,7 @@
-"""Stage 3 — LangChain retriever with score threshold + dedup."""
+"""Stage 3 — LangChain retriever with score threshold + dedup.
+
+Works with any vector store backend (Pinecone or ChromaDB).
+"""
 
 from __future__ import annotations
 
@@ -11,16 +14,16 @@ from pydantic import ConfigDict
 from src.config import Settings
 from src.lc.documents import document_to_search_result
 from src.lc.embeddings import build_embeddings
-from src.lc.vectorstore import LangChainPineconeVectorStore
+from src.lc.vectorstore import LangChainVectorStoreAdapter
 from src.models import SearchResult
 
 
-class LangChainPineconeRetriever(BaseRetriever):
+class LangChainRetriever(BaseRetriever):
     """LC BaseRetriever with score threshold and optional embedding dedup."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    vectorstore: LangChainPineconeVectorStore
+    vectorstore: LangChainVectorStoreAdapter
     settings: Settings
     top_k: int | None = None
     score_threshold: float | None = None
@@ -105,13 +108,13 @@ class LangChainPineconeRetriever(BaseRetriever):
 
 
 class LangChainSemanticRetriever:
-    """Semantic search facade over LangChain embeddings + Pinecone."""
+    """Semantic search facade over LangChain embeddings + vector store backend."""
 
     def __init__(self, settings: Settings):
         settings.validate_for_vector_store()
         self.settings = settings
         self.embeddings = build_embeddings(settings)
-        self.vectorstore = LangChainPineconeVectorStore(
+        self.vectorstore = LangChainVectorStoreAdapter(
             settings,
             self.embeddings,
             create_if_missing=True,
@@ -128,7 +131,7 @@ class LangChainSemanticRetriever:
         dedup_threshold: float | None = None,
     ) -> list[SearchResult]:
         """Retrieve top chunks for a text query (threshold + optional dedup)."""
-        retriever = LangChainPineconeRetriever(
+        retriever = LangChainRetriever(
             vectorstore=self.vectorstore,
             settings=self.settings,
             top_k=top_k,
