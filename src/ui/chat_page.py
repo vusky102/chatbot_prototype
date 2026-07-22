@@ -11,6 +11,8 @@ import streamlit.components.v1 as components
 
 from src.rag import RAGService
 from src.tts import TextToSpeechRouter
+from src.config import Settings
+from src.utils.image_resolver import resolve_image_path
 
 
 CARD_WIDTH = 200
@@ -686,13 +688,15 @@ def _carousel_html(sources: list[dict], message_id: int) -> tuple[str, str]:
 
 def _render_source_images(sources: list[dict]) -> None:
     """Show expandable previews for retrieved visual assets."""
+    settings = Settings.from_env()
     seen: set[str] = set()
     for source in sources:
         image_path = str(source.get("image_path") or "")
         if not image_path or image_path in seen:
             continue
-        path = Path(image_path)
-        if not path.is_file():
+        
+        path = resolve_image_path(image_path, settings.visual_output_dir)
+        if not path:
             continue
         seen.add(image_path)
         label = (

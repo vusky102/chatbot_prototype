@@ -24,8 +24,8 @@ same language as the visual.
 PAGE_CONTEXT_CHARS = 500
 
 
-def _visual_id(source_file: str, image_name: str) -> str:
-    raw = f"{source_file}|visual|{image_name}".encode("utf-8")
+def _visual_id(source_file: str, page: int, content_type: str, center_x_pct: float | str, center_y_pct: float | str) -> str:
+    raw = f"{source_file}|{page}|{content_type}|{center_x_pct}|{center_y_pct}".encode("utf-8")
     return hashlib.sha256(raw).hexdigest()[:32]
 
 
@@ -117,6 +117,8 @@ def caption_visuals(
     source_file: str,
     provider: str,
     page_texts: dict[int, str] | None = None,
+    elements: list[dict] | None = None,
+    visual_output_dir_base: Path | None = None,
 ) -> list[DocumentChunk]:
     if not visual_dir.exists():
         return []
@@ -141,6 +143,7 @@ def caption_visuals(
         print(f"  -> Warning: visual captioner unavailable ({exc}); using page context only.")
 
     page_texts = page_texts or {}
+    elements_map = {el["filename"]: el for el in (elements or [])}
     chunks = []
     changed = False
 
@@ -170,6 +173,14 @@ def caption_visuals(
             changed = True
 
         page, content_type = _image_metadata(image_path)
+        el_info = elements_map.get(image_path.name)
+        if el_info:
+            center_x_pct = el_info.get("center_x_pct", 0)
+            center_y_pct = el_info.get("center_y_pct", 0)
+        else:
+            center_x_pct = 0
+            center_y_pct = 0
+            
         page_excerpt = ""
         co_located = page_texts.get(page, "")
         if co_located:
@@ -188,14 +199,22 @@ def caption_visuals(
             print(f"  -> Warning: aHash failed for {image_path.name}: {exc}")
             ahash = ""
 
+        if visual_output_dir_base:
+            try:
+                rel_path = str(image_path.relative_to(visual_output_dir_base))
+            except ValueError:
+                rel_path = str(image_path)
+        else:
+            rel_path = str(image_path)
+
         chunks.append(
             DocumentChunk(
-                id=_visual_id(source_file, image_path.name),
+                id=_visual_id(source_file, page, content_type, center_x_pct, center_y_pct),
                 text=text,
                 source_file=source_file,
                 page=page,
                 content_type=content_type,
-                image_path=str(image_path),
+                image_path=rel_path,
                 ahash=ahash,
                 chunk_index=index,
             )

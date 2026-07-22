@@ -42,6 +42,8 @@ def _collect_visual_chunks(
             source_file=pdf_path.name,
             provider=settings.visual_provider,
             page_texts=page_text_map(extracted_text),
+            elements=result.get("elements"),
+            visual_output_dir_base=Path(settings.visual_output_dir),
         )
     except Exception as exc:
         print(f"  -> Warning: visual captioning failed: {exc}")

@@ -18,6 +18,7 @@ from src.ui.tuning import (
     tuning_from_settings,
     validate_tuning,
 )
+from src.utils.image_resolver import resolve_image_path
 
 
 def _load_documents(service: RAGService) -> tuple[list[str], str | None, dict[str, object]]:
@@ -592,8 +593,10 @@ def _render_debug_tab(service: RAGService, settings: Settings) -> None:
             image_path = item.get("image_path") or ""
             if image_path:
                 st.code(image_path)
-                if Path(image_path).is_file():
-                    st.image(image_path, width="stretch")
+                settings = get_effective_settings()
+                path = resolve_image_path(image_path, settings.visual_output_dir)
+                if path:
+                    st.image(str(path), width="stretch")
             if item.get("ahash"):
                 st.caption(f"aHash: {item['ahash']}")
 

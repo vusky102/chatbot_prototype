@@ -11,7 +11,7 @@ A web-based internal assistant powered by Retrieval-Augmented Generation (RAG). 
   - **ChromaDB (Local · Dense-Only)**: Zero-config local persistent store in `./chroma_db/`. Runs fully offline without cloud vector DB keys.
   - **Automatic Fallback (`auto` mode)**: Tries Pinecone first; if connection fails or API keys are missing, seamlessly falls back to ChromaDB.
 - **Streamlit Web UI**: Chat interface, Admin management, and interactive 3D/2D embedding visualization pages.
-- **PDF Ingestion & Visual Pipeline**: Heading-aware chunking, visual image extraction, and automated Gemini visual captioning.
+- **PDF Ingestion & Visual Pipeline**: Heading-aware chunking, visual image extraction with spatial IDs for stable indexing, relative path storage for portable metadata, and automated Gemini visual captioning.
 - **Image-Based Retrieval**: Perceptual visual search via average hash (`aHash`) matching.
 - **Embedding Deduplication**: Query-time cosine similarity filtering to remove duplicate information across multiple documents.
 - **Multi-Provider Models**: Flexible support for OpenAI, Google Gemini, and OpenRouter LLMs & Embeddings.

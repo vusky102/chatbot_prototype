@@ -126,19 +126,14 @@ class PineconeVectorStore(VectorStoreBackend):
 
         deleted = 0
         if ids_to_delete:
-            async_results = [
+            for batch in _batches(
+                [{"id": vector_id} for vector_id in ids_to_delete],
+                1000,
+            ):
                 self.index.delete(
                     ids=[item["id"] for item in batch],
                     namespace=self.settings.pinecone_namespace,
-                    async_req=True,
                 )
-                for batch in _batches(
-                    [{"id": vector_id} for vector_id in ids_to_delete],
-                    1000,
-                )
-            ]
-            for res in async_results:
-                res.get()
             return len(ids_to_delete)
 
         # Fallback: metadata filter (supported on newer serverless indexes).
@@ -181,18 +176,12 @@ class PineconeVectorStore(VectorStoreBackend):
             }
             for chunk, vector, sparse in zip(chunks, vectors, sparse_vectors)
         ]
-        async_results = [
+        for batch in _batches(records, batch_size):
             self.index.upsert(
                 vectors=batch,
                 namespace=self.settings.pinecone_namespace,
-                async_req=True,
             )
-            for batch in _batches(records, batch_size)
-        ]
         
-        for res in async_results:
-            res.get()
-            
         return len(records)
 
     def search(

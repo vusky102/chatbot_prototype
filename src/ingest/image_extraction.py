@@ -313,7 +313,7 @@ def extract_embedded_images(doc, page, page_num, output_dir, min_size=50):
     Filters out tiny images (logos, icons) by min_size threshold.
     """
     images = page.get_images(full=True)
-    extracted = 0
+    elements = []
 
     for img_idx, img in enumerate(images):
         xref = img[0]
@@ -339,10 +339,17 @@ def extract_embedded_images(doc, page, page_num, output_dir, min_size=50):
         with open(str(out_path), "wb") as f:
             f.write(img_bytes)
 
-        print(f"    -> Embedded image: {out_name} ({w}x{h})")
-        extracted += 1
+        elements.append({
+            "filename": out_name,
+            "page": page_num + 1,
+            "type": "embedded",
+            "center_x_pct": f"xref_{xref}",
+            "center_y_pct": f"xref_{xref}"
+        })
 
-    return extracted
+        print(f"    -> Embedded image: {out_name} ({w}x{h})")
+
+    return elements
 
 
 # ─── Main Processing ─────────────────────────────────────────────────────────
@@ -357,6 +364,7 @@ def process_pdf(pdf_path, output_dir, ai_client, model, provider, render_dpi=150
             "embedded_count": 0,
             "ai_extracted_count": 0,
             "output_dir": None,
+            "elements": [],
             "error": msg
         }
 
@@ -373,12 +381,14 @@ def process_pdf(pdf_path, output_dir, ai_client, model, provider, render_dpi=150
             "embedded_count": 0,
             "ai_extracted_count": 0,
             "output_dir": None,
+            "elements": [],
             "error": str(e)
         }
 
     pdf_output_dir = Path(output_dir) / pdf_path.stem
     total_embedded = 0
     total_ai_extracted = 0
+    extracted_elements = []
 
     batch_size = 5
     for i in range(0, len(doc), batch_size):
@@ -390,8 +400,9 @@ def process_pdf(pdf_path, output_dir, ai_client, model, provider, render_dpi=150
             print(f"\n  Page {page_num + 1}/{len(doc)}")
 
             # Phase 1: Extract embedded raster images (no AI)
-            embedded = extract_embedded_images(doc, page, page_num, pdf_output_dir)
-            total_embedded += embedded
+            embedded_elements = extract_embedded_images(doc, page, page_num, pdf_output_dir)
+            total_embedded += len(embedded_elements)
+            extracted_elements.extend(embedded_elements)
 
             # Phase 2: AI-powered visual element detection prep
             png_bytes, img_w, img_h = render_page_to_png(page, target_dpi=render_dpi)
@@ -438,6 +449,17 @@ def process_pdf(pdf_path, output_dir, ai_client, model, provider, render_dpi=150
                             page, box_2d, img_w, img_h, str(out_path), dpi=crop_dpi
                         )
                         if success:
+                            center_x = (xmin + xmax) / 2
+                            center_y = (ymin + ymax) / 2
+                            center_x_pct = round((center_x / img_w) * 20) / 20
+                            center_y_pct = round((center_y / img_h) * 20) / 20
+                            extracted_elements.append({
+                                "filename": out_name,
+                                "page": page_num + 1,
+                                "type": el_type,
+                                "center_x_pct": center_x_pct,
+                                "center_y_pct": center_y_pct,
+                            })
                             print(f"    -> Saved: {out_name} ({desc[:60]})")
                             total_ai_extracted += 1
 
@@ -452,7 +474,8 @@ def process_pdf(pdf_path, output_dir, ai_client, model, provider, render_dpi=150
     return {
         "embedded_count": total_embedded,
         "ai_extracted_count": total_ai_extracted,
-        "output_dir": pdf_output_dir
+        "output_dir": pdf_output_dir,
+        "elements": extracted_elements
     }
 
 

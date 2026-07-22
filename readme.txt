@@ -7,11 +7,12 @@ grounded answers with source citations using OpenAI-compatible models.
 
 The project includes:
 - Streamlit web UI with Chat, Admin, and Visualize pages
-- PDF ingestion pipeline with image extraction and visual captioning
+- PDF ingestion pipeline with batched vector upserting, spatially-anchored image extraction, and visual captioning
 - Dual Vector DB architecture (Pinecone cloud hybrid search & ChromaDB local dense search)
 - Automatic database fallback (Pinecone -> ChromaDB when API key is missing or fails)
 - Hybrid search (dense embeddings + BM25 sparse keywords via Pinecone)
 - Embedding deduplication with cosine similarity
+- Image metadata uses relative paths for cross-machine vector database portability
 - Multi-provider model selection (OpenAI / Gemini / OpenRouter)
 - Interactive 3D/2D embedding visualizations (Plotly + streamlit-agraph)
 - Image-based retrieval via perceptual hashing (aHash)
@@ -77,12 +78,14 @@ The system supports a flexible dual-database architecture:
    - Combines dense vector embeddings with BM25 sparse keyword vectors.
    - Requires PINECONE_API_KEY and a cloud-hosted index.
    - Tunable hybrid search weighting via RAG_RETRIEVAL_HYBRID_ALPHA (0.0 = pure BM25, 1.0 = pure dense).
+   - Batch vector upserting (default batch size of 100 vectors).
 
 2. ChromaDB (Local · Dense-Only):
    - Embedded local vector database stored in `./chroma_db/`.
    - Uses HNSW cosine similarity distance.
    - Zero external cloud dependencies or API keys required for vector storage.
    - Supports aHash visual similarity search.
+   - Batch vector upserting (default batch size of 100 vectors).
 
 3. Automatic Fallback ("auto" mode):
    - Default mode on startup.
