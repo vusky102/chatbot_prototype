@@ -7,9 +7,12 @@ from __future__ import annotations
 MODEL_PRICING: dict[str, tuple[float, float]] = {
     # ── OpenAI (via portal) ──────────────────────────────
     "gpt-4o-mini":            (0.17,   0.66),
+    "gpt-4.1-mini":           (0.40,   1.60),
+    "gpt-5.4-mini":           (0.25,   2.00),
     "gpt-4o":                 (2.50,  10.00),
     "gpt-4-turbo":            (10.00, 30.00),
     "gpt-3.5-turbo":          (0.50,   1.50),
+    "deepseek-v4-flash":      (0.19,   0.51),
 
     # ── Google Gemini ────────────────────────────────────
     "gemini-2.5-flash":       (0.30,   2.50),    # VERIFY — may have changed

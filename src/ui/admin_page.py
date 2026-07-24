@@ -513,14 +513,14 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
 
             # First page: |<
             with cols[col_idx]:
-                if st.button("|<", key="p_first", disabled=(curr_page <= 1), use_container_width=True):
+                if st.button("|<", key="p_first", disabled=(curr_page <= 1), width="stretch"):
                     st.session_state.admin_docs_page = 1
                     st.rerun()
             col_idx += 1
 
             # Previous page: <
             with cols[col_idx]:
-                if st.button("<", key="p_prev", disabled=(curr_page <= 1), use_container_width=True):
+                if st.button("<", key="p_prev", disabled=(curr_page <= 1), width="stretch"):
                     st.session_state.admin_docs_page = curr_page - 1
                     st.rerun()
             col_idx += 1
@@ -529,21 +529,21 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
             for p in visible_pages:
                 with cols[col_idx]:
                     btn_type = "primary" if p == curr_page else "secondary"
-                    if st.button(str(p), key=f"p_num_{p}", type=btn_type, use_container_width=True):
+                    if st.button(str(p), key=f"p_num_{p}", type=btn_type, width="stretch"):
                         st.session_state.admin_docs_page = p
                         st.rerun()
                 col_idx += 1
 
             # Next page: >
             with cols[col_idx]:
-                if st.button(">", key="p_next", disabled=(curr_page >= total_pages), use_container_width=True):
+                if st.button(">", key="p_next", disabled=(curr_page >= total_pages), width="stretch"):
                     st.session_state.admin_docs_page = curr_page + 1
                     st.rerun()
             col_idx += 1
 
             # Last page: >|
             with cols[col_idx]:
-                if st.button(">|", key="p_last", disabled=(curr_page >= total_pages), use_container_width=True):
+                if st.button(">|", key="p_last", disabled=(curr_page >= total_pages), width="stretch"):
                     st.session_state.admin_docs_page = total_pages
                     st.rerun()
 
@@ -677,7 +677,7 @@ def _render_batch_tab(service: RAGService, settings: Settings) -> None:
         key="admin_batch_uploader",
     )
 
-    if st.button("Submit Batch Job", type="primary", disabled=not uploaded_files, use_container_width=True):
+    if st.button("Submit Batch Job", type="primary", disabled=not uploaded_files, width="stretch"):
         with st.spinner("Preparing batch job..."):
             try:
                 import tempfile
@@ -698,7 +698,7 @@ def _render_batch_tab(service: RAGService, settings: Settings) -> None:
     st.divider()
     
     st.subheader("Active Batch Jobs")
-    if st.button("Refresh Statuses", use_container_width=True):
+    if st.button("Refresh Statuses", width="stretch"):
         st.rerun()
         
     jobs = list_batch_jobs()
@@ -725,7 +725,7 @@ def _render_batch_tab(service: RAGService, settings: Settings) -> None:
                         
                 with col2:
                     if status == "SUCCEEDED":
-                        if st.button("Finalize & Index", key=f"fin_{local_id}", type="primary", use_container_width=True):
+                        if st.button("Finalize & Index", key=f"fin_{local_id}", type="primary", width="stretch"):
                             with st.spinner("Downloading results and indexing to Vector DB..."):
                                 try:
                                     res = finalize_batch_job(local_id, effective)
@@ -822,14 +822,14 @@ def _render_usage_dashboard() -> None:
         if not breakdown:
             st.info("No API usage recorded in this session yet.")
         else:
-            st.dataframe(breakdown, use_container_width=True, hide_index=True)
+            st.dataframe(breakdown, width="stretch", hide_index=True)
             
     with tab_history_bd:
         history_breakdown = tracker.get_history_breakdown_by_model()
         if not history_breakdown:
             st.info("No historical API usage recorded yet.")
         else:
-            st.dataframe(history_breakdown, use_container_width=True, hide_index=True)
+            st.dataframe(history_breakdown, width="stretch", hide_index=True)
         
     if st.button("Reset Session Counters", type="secondary"):
         tracker.reset_session()
@@ -848,7 +848,7 @@ def _render_usage_dashboard() -> None:
         import pandas as pd
         df = pd.DataFrame([vars(r) for r in history])
         df = df.rename(columns={"timestamp": "Time", "model": "Model", "provider": "Provider", "operation": "Operation", "input_tokens": "Input", "output_tokens": "Output", "estimated_cost": "Cost ($)"})
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width="stretch", hide_index=True)
         
         col_export, col_clear = st.columns([1, 1])
         with col_export:
@@ -915,7 +915,7 @@ def _render_eval_tab(service: RAGService, settings: Settings) -> None:
             help="Number of batches to process simultaneously via asyncio."
         )
     
-    if st.button("🚀 Run Evaluation", type="primary", use_container_width=True):
+    if st.button("🚀 Run Evaluation", type="primary", width="stretch"):
         progress_bar = st.progress(0, text="Starting evaluation...")
         
         def on_progress(done: int, total: int, msg: str):
@@ -959,7 +959,7 @@ def _render_eval_tab(service: RAGService, settings: Settings) -> None:
     if not history:
         st.info("No evaluation history found. Run an evaluation to see results here.")
     else:
-        st.dataframe(history, use_container_width=True, hide_index=True)
+        st.dataframe(history, width="stretch", hide_index=True)
 
 def render_admin_page(service: RAGService, settings: Settings) -> None:
     """Admin UI: documents, tuning, and retrieval debug tabs."""

@@ -372,8 +372,8 @@ class EvalRunner:
                     "Accuracy (%)": round(acc, 2),
                     "Correct": stats["correct"],
                     "Total": stats["total"],
-                    "Batch Size": run_meta.get("batch_size", "-"),
-                    "Max Workers": run_meta.get("max_workers", "-")
+                    "Batch Size": run_meta.get("batch_size", None),
+                    "Max Workers": run_meta.get("max_workers", None)
                 })
                 
         # Sort history by run desc

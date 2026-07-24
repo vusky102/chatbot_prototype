@@ -1,0 +1,20 @@
+{
+  "ai_answer_20260725_000308": {
+    "timestamp": "20260725_000308",
+    "batch_size": 1,
+    "max_workers": 10,
+    "model": "GPT-4.1-mini",
+    "accuracy": 84.95748855461086,
+    "correct": 1299,
+    "total": 1529
+  },
+  "ai_answer_20260725_002811": {
+    "timestamp": "20260725_002811",
+    "batch_size": 1,
+    "max_workers": 10,
+    "model": "GPT-4.1-mini",
+    "accuracy": 85.15369522563768,
+    "correct": 1302,
+    "total": 1529
+  }
+}
