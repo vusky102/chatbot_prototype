@@ -381,10 +381,15 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
     st.divider()
     st.subheader("Indexed documents")
 
+    has_loaded_docs = "admin_documents" in st.session_state
+    
     toolbar_left, toolbar_right = st.columns([1, 1])
     with toolbar_left:
-        if st.button("Refresh list", width="stretch"):
-            _refresh_documents(service)
+        btn_text = "Refresh list" if has_loaded_docs else "Scan Index for Documents"
+        btn_type = "secondary" if has_loaded_docs else "primary"
+        if st.button(btn_text, type=btn_type, width="stretch"):
+            with st.spinner("Scanning vector index... This may take a while."):
+                _refresh_documents(service)
             st.rerun()
     with toolbar_right:
         stats = st.session_state.get("admin_documents_stats") or {}
@@ -409,6 +414,10 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
     error = st.session_state.get("admin_documents_error")
     if error:
         st.error(f"Could not load documents: {error}")
+
+    if not has_loaded_docs:
+        st.info("Click 'Scan Index for Documents' to load the list of indexed PDFs. This operation may be slow for large indexes.")
+        return
 
     documents = list(st.session_state.get("admin_documents") or [])
 
@@ -864,7 +873,8 @@ def _render_eval_tab(service: RAGService, settings: Settings) -> None:
     
     from src.eval.eval_runner import EvalRunner
     
-    runner = EvalRunner(service, settings)
+    effective_settings = get_effective_settings(settings)
+    runner = EvalRunner(service, effective_settings)
     
     questions_csv = "docs/Training_data_GD4/input/question.csv"
     ground_truth_md = "docs/Training_data_GD4/real_answer.md"
@@ -965,9 +975,8 @@ def render_admin_page(service: RAGService, settings: Settings) -> None:
     """Admin UI: documents, tuning, and retrieval debug tabs."""
     st.markdown('<div class="admin-page-marker"></div>', unsafe_allow_html=True)
 
-    # Do not re-scan Pinecone on every interaction (breaks Debug retrieve UX).
-    if "admin_documents" not in st.session_state:
-        _refresh_documents(service)
+    # Do not re-scan Pinecone on every interaction or page load.
+    # The user will explicitly click a button to load documents to avoid slow page loads.
 
     tab_docs, tab_batch, tab_settings, tab_debug, tab_usage, tab_eval = st.tabs(
         ["Manage documents", "Batch Indexing", "Settings", "Debug retrieval", "📊 Usage & Cost", "🧪 Evaluation"]

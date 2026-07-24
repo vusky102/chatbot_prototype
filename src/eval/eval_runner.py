@@ -7,6 +7,7 @@ from collections.abc import Callable
 
 from src.config import Settings
 from src.lc.eval_chain import build_batch_eval_chain, build_single_eval_chain
+from src.lc.chain import CostTrackingCallback
 from src.rag.service import RAGService
 
 
@@ -127,14 +128,17 @@ class EvalRunner:
             context = await asyncio.to_thread(self._retrieve_context, q["question"])
             try:
                 # Use ainvoke for async LangChain call
-                ans = await self.single_chain.ainvoke({
-                    "question": q["question"],
-                    "a": q["A"],
-                    "b": q["B"],
-                    "c": q["C"],
-                    "d": q["D"],
-                    "context": context
-                })
+                ans = await self.single_chain.ainvoke(
+                    {
+                        "question": q["question"],
+                        "a": q["A"],
+                        "b": q["B"],
+                        "c": q["C"],
+                        "d": q["D"],
+                        "context": context
+                    },
+                    config={"callbacks": [CostTrackingCallback(self.settings)]}
+                )
             except Exception:
                 ans = "X"
             return {"question_number": q["question_number"], "ai_answer": ans}
@@ -148,7 +152,10 @@ class EvalRunner:
                 batched_content += f"Context:\n{context}\n\n"
 
             try:
-                batch_results = await self.batch_chain.ainvoke({"batched_content": batched_content})
+                batch_results = await self.batch_chain.ainvoke(
+                    {"batched_content": batched_content},
+                    config={"callbacks": [CostTrackingCallback(self.settings)]}
+                )
             except Exception:
                 batch_results = {}
                 
