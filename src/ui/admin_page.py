@@ -19,6 +19,7 @@ from src.ui.tuning import (
     validate_tuning,
 )
 from src.utils.image_resolver import resolve_image_path
+from src.ingest.batch_pipeline import create_batch_job, list_batch_jobs, finalize_batch_job
 
 
 def _load_documents(service: RAGService) -> tuple[list[str], str | None, dict[str, object]]:
@@ -457,6 +458,8 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
             
         if st.session_state.admin_docs_page > total_pages:
             st.session_state.admin_docs_page = total_pages
+        if st.session_state.admin_docs_page < 1:
+            st.session_state.admin_docs_page = 1
             
         start_idx = (st.session_state.admin_docs_page - 1) * items_per_page
         end_idx = start_idx + items_per_page
@@ -488,17 +491,66 @@ def _render_documents(service: RAGService, base_settings: Settings) -> None:
         # Pagination controls bottom
         if total_pages > 1:
             st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-            prev_col, page_col, next_col = st.columns([1, 2, 1], vertical_alignment="center")
-            with prev_col:
-                if st.button("Previous", key="prev_page_bot", disabled=st.session_state.admin_docs_page <= 1, use_container_width=True):
-                    st.session_state.admin_docs_page -= 1
+            curr_page = st.session_state.admin_docs_page
+            
+            # Window of max 4 clickable page numbers closest to current page
+            max_visible = 4
+            if total_pages <= max_visible:
+                start_p = 1
+                end_p = total_pages
+            else:
+                start_p = max(1, curr_page - 1)
+                end_p = start_p + max_visible - 1
+                if end_p > total_pages:
+                    end_p = total_pages
+                    start_p = max(1, end_p - max_visible + 1)
+
+            visible_pages = list(range(start_p, end_p + 1))
+            total_cols = 4 + len(visible_pages)
+            
+            cols = st.columns(total_cols, gap="small")
+            col_idx = 0
+
+            # First page: |<
+            with cols[col_idx]:
+                if st.button("|<", key="p_first", disabled=(curr_page <= 1), use_container_width=True):
+                    st.session_state.admin_docs_page = 1
                     st.rerun()
-            with page_col:
-                st.markdown(f"<div style='text-align: center; color: #8b949e; font-size: 0.9em;'>Page {st.session_state.admin_docs_page} of {total_pages}</div>", unsafe_allow_html=True)
-            with next_col:
-                if st.button("Next", key="next_page_bot", disabled=st.session_state.admin_docs_page >= total_pages, use_container_width=True):
-                    st.session_state.admin_docs_page += 1
+            col_idx += 1
+
+            # Previous page: <
+            with cols[col_idx]:
+                if st.button("<", key="p_prev", disabled=(curr_page <= 1), use_container_width=True):
+                    st.session_state.admin_docs_page = curr_page - 1
                     st.rerun()
+            col_idx += 1
+
+            # Clickable page numbers
+            for p in visible_pages:
+                with cols[col_idx]:
+                    btn_type = "primary" if p == curr_page else "secondary"
+                    if st.button(str(p), key=f"p_num_{p}", type=btn_type, use_container_width=True):
+                        st.session_state.admin_docs_page = p
+                        st.rerun()
+                col_idx += 1
+
+            # Next page: >
+            with cols[col_idx]:
+                if st.button(">", key="p_next", disabled=(curr_page >= total_pages), use_container_width=True):
+                    st.session_state.admin_docs_page = curr_page + 1
+                    st.rerun()
+            col_idx += 1
+
+            # Last page: >|
+            with cols[col_idx]:
+                if st.button(">|", key="p_last", disabled=(curr_page >= total_pages), use_container_width=True):
+                    st.session_state.admin_docs_page = total_pages
+                    st.rerun()
+
+            st.markdown(
+                f"<div style='text-align: center; color: #8b949e; font-size: 0.85em; margin-top: 8px;'>Page {curr_page} of {total_pages} ({len(documents)} total documents)</div>",
+                unsafe_allow_html=True,
+            )
 
     st.divider()
     manual_name = st.text_input(
@@ -601,6 +653,314 @@ def _render_debug_tab(service: RAGService, settings: Settings) -> None:
                 st.caption(f"aHash: {item['ahash']}")
 
 
+def _render_batch_tab(service: RAGService, settings: Settings) -> None:
+    """Admin tab: batch process PDFs asynchronously using Gemini."""
+    st.subheader("Create Batch Job")
+    
+    effective = get_effective_settings(settings)
+    if effective.visual_provider.lower() != "gemini":
+        st.warning("Batch Indexing is currently only supported with Gemini visual provider. Please change your settings in the 'Settings' tab.")
+        return
+
+    flash = st.session_state.pop("admin_batch_flash", None)
+    if flash:
+        st.success(flash)
+        
+    error_flash = st.session_state.pop("admin_batch_error", None)
+    if error_flash:
+        st.error(error_flash)
+
+    uploaded_files = st.file_uploader(
+        "Choose PDFs to process in batch",
+        type=["pdf"],
+        accept_multiple_files=True,
+        key="admin_batch_uploader",
+    )
+
+    if st.button("Submit Batch Job", type="primary", disabled=not uploaded_files, use_container_width=True):
+        with st.spinner("Preparing batch job..."):
+            try:
+                import tempfile
+                with tempfile.TemporaryDirectory() as tmp:
+                    paths = []
+                    for uploaded in uploaded_files:
+                        pdf_path = Path(tmp) / str(uploaded.name)
+                        pdf_path.write_bytes(bytes(uploaded.getvalue()))
+                        paths.append(pdf_path)
+                    
+                    res = create_batch_job(paths, effective)
+                    st.session_state.admin_batch_flash = f"Job created! ID: {res['local_job_id']}"
+                    st.rerun()
+            except Exception as exc:
+                st.session_state.admin_batch_error = f"Failed to submit: {exc}"
+                st.rerun()
+
+    st.divider()
+    
+    st.subheader("Active Batch Jobs")
+    if st.button("Refresh Statuses", use_container_width=True):
+        st.rerun()
+        
+    jobs = list_batch_jobs()
+    if not jobs:
+        st.info("No active batch jobs.")
+    else:
+        for job in jobs:
+            local_id = job.get("local_job_id", "unknown")
+            gemini_id = job.get("gemini_job_id") or "N/A"
+            status = job.get("status", "UNKNOWN")
+            vis_count = job.get("visual_count", 0)
+            
+            with st.container(border=True):
+                st.markdown(f"**Job ID:** `{local_id}`")
+                st.markdown(f"**Files:** {', '.join(job.get('source_files', []))}")
+                col1, col2 = st.columns([3, 1], vertical_alignment="center")
+                with col1:
+                    if status == "SUCCEEDED":
+                        st.success("Status: SUCCEEDED")
+                    elif status == "FAILED" or "FAILED" in status:
+                        st.error(f"Status: {status} | Error: {job.get('error', '')}")
+                    else:
+                        st.info(f"Status: {status} | Gemini ID: {gemini_id} | Visuals: {vis_count}")
+                        
+                with col2:
+                    if status == "SUCCEEDED":
+                        if st.button("Finalize & Index", key=f"fin_{local_id}", type="primary", use_container_width=True):
+                            with st.spinner("Downloading results and indexing to Vector DB..."):
+                                try:
+                                    res = finalize_batch_job(local_id, effective)
+                                    st.session_state.admin_batch_flash = f"Successfully indexed {res['upserted']} chunks!"
+                                    st.rerun()
+                                except Exception as exc:
+                                    import logging
+                                    logging.getLogger(__name__).error("Failed to finalize batch job", exc_info=True)
+                                    st.error(f"Failed to finalize: {exc}")
+
+
+def _render_usage_dashboard() -> None:
+    """Admin tab: usage statistics, session costs, and historical tracking."""
+    st.subheader("Usage & Cost Dashboard")
+    
+    from src.utils.token_tracker import TokenTracker
+    from src.utils.budget import get_budget, set_budget, check_budget
+    tracker = TokenTracker()
+    
+    # Budget Config
+    st.markdown("### 💸 Budget Configuration")
+    with st.container(border=True):
+        col1, col2 = st.columns([1, 1], vertical_alignment="bottom")
+        current_budget = get_budget()
+        with col1:
+            new_budget = st.number_input("Cost Threshold ($)", min_value=0.0, step=0.5, value=current_budget, help="Set a budget alert limit for session tracking.")
+        with col2:
+            if st.button("Save Budget", type="primary"):
+                set_budget(new_budget)
+                st.success("Budget updated!")
+                st.rerun()
+                
+    st.divider()
+
+    # Session & History Summary
+    totals = tracker.get_session_totals()
+    history_totals = tracker.get_history_totals()
+    
+    st.markdown("### 📊 Current Session Summary")
+    if check_budget(totals['total_cost']):
+        st.error(f"⚠️ Warning: Session cost (${totals['total_cost']:.4f}) has exceeded your budget (${get_budget():.2f})!")
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown(f'''<div class="usage-dashboard-card">
+        <div class="usage-dashboard-label">API Calls</div>
+        <div class="usage-dashboard-val">{totals['num_calls']}</div>
+        </div>''', unsafe_allow_html=True)
+    with col2:
+        st.markdown(f'''<div class="usage-dashboard-card">
+        <div class="usage-dashboard-label">Input Tokens</div>
+        <div class="usage-dashboard-val">{totals['total_input']:,}</div>
+        </div>''', unsafe_allow_html=True)
+    with col3:
+        st.markdown(f'''<div class="usage-dashboard-card">
+        <div class="usage-dashboard-label">Output Tokens</div>
+        <div class="usage-dashboard-val">{totals['total_output']:,}</div>
+        </div>''', unsafe_allow_html=True)
+    with col4:
+        st.markdown(f'''<div class="usage-dashboard-card">
+        <div class="usage-dashboard-label">Total Cost</div>
+        <div class="usage-dashboard-val" style="color: #10b981;">${totals['total_cost']:.4f}</div>
+        </div>''', unsafe_allow_html=True)
+
+    st.markdown("<br>### 🌐 All-Time History Summary", unsafe_allow_html=True)
+    h_col1, h_col2, h_col3, h_col4 = st.columns(4)
+    with h_col1:
+        st.markdown(f'''<div class="usage-dashboard-card">
+        <div class="usage-dashboard-label">Total API Calls</div>
+        <div class="usage-dashboard-val">{history_totals['num_calls']}</div>
+        </div>''', unsafe_allow_html=True)
+    with h_col2:
+        st.markdown(f'''<div class="usage-dashboard-card">
+        <div class="usage-dashboard-label">Total Input Tokens</div>
+        <div class="usage-dashboard-val">{history_totals['total_input']:,}</div>
+        </div>''', unsafe_allow_html=True)
+    with h_col3:
+        st.markdown(f'''<div class="usage-dashboard-card">
+        <div class="usage-dashboard-label">Total Output Tokens</div>
+        <div class="usage-dashboard-val">{history_totals['total_output']:,}</div>
+        </div>''', unsafe_allow_html=True)
+    with h_col4:
+        st.markdown(f'''<div class="usage-dashboard-card">
+        <div class="usage-dashboard-label">All-Time Cost</div>
+        <div class="usage-dashboard-val" style="color: #6366f1;">${history_totals['total_cost']:.4f}</div>
+        </div>''', unsafe_allow_html=True)
+
+    # Model Breakdown
+    st.markdown("<br>#### Breakdown by Model", unsafe_allow_html=True)
+    tab_session_bd, tab_history_bd = st.tabs(["⚡ Current Session", "🌐 All-Time History"])
+    
+    with tab_session_bd:
+        breakdown = tracker.get_breakdown_by_model()
+        if not breakdown:
+            st.info("No API usage recorded in this session yet.")
+        else:
+            st.dataframe(breakdown, use_container_width=True, hide_index=True)
+            
+    with tab_history_bd:
+        history_breakdown = tracker.get_history_breakdown_by_model()
+        if not history_breakdown:
+            st.info("No historical API usage recorded yet.")
+        else:
+            st.dataframe(history_breakdown, use_container_width=True, hide_index=True)
+        
+    if st.button("Reset Session Counters", type="secondary"):
+        tracker.reset_session()
+        st.rerun()
+
+    st.divider()
+    
+    # Persistent History
+    st.markdown("### 🕰️ Historical Usage Log")
+    st.caption("Logs all past interactions across sessions.")
+    history = tracker.get_all_history()
+    
+    if not history:
+        st.info("No historical logs found.")
+    else:
+        import pandas as pd
+        df = pd.DataFrame([vars(r) for r in history])
+        df = df.rename(columns={"timestamp": "Time", "model": "Model", "provider": "Provider", "operation": "Operation", "input_tokens": "Input", "output_tokens": "Output", "estimated_cost": "Cost ($)"})
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        
+        col_export, col_clear = st.columns([1, 1])
+        with col_export:
+            st.download_button("Export as CSV", tracker.export_csv(), "usage_log.csv", "text/csv")
+        with col_clear:
+            if st.button("Clear History Log", type="primary"):
+                tracker.clear_history()
+                st.rerun()
+
+def _render_eval_tab(service: RAGService, settings: Settings) -> None:
+    """Admin tab: evaluate the model accuracy on test dataset."""
+    st.subheader("Model Evaluation")
+    
+    from src.eval.eval_runner import EvalRunner
+    
+    runner = EvalRunner(service, settings)
+    
+    questions_csv = "docs/Training_data_GD4/input/question.csv"
+    ground_truth_md = "docs/Training_data_GD4/real_answer.md"
+    output_csv = "evaluation_results.csv"
+    
+    if "eval_questions" not in st.session_state:
+        st.session_state.eval_questions = runner.load_questions(questions_csv)
+    if "eval_ground_truth" not in st.session_state:
+        st.session_state.eval_ground_truth = runner.load_ground_truth(ground_truth_md)
+    if "eval_history" not in st.session_state:
+        st.session_state.eval_history = runner.get_history(output_csv)
+        
+    questions = st.session_state.eval_questions
+    ground_truth = st.session_state.eval_ground_truth
+    
+    total_q = len(questions)
+    
+    if total_q == 0:
+        st.warning(f"Could not load questions from {questions_csv}")
+        return
+        
+    st.markdown(f"**Loaded:** {total_q} questions | Ground truth for {len(ground_truth)}")
+    
+    st.divider()
+    
+    col_start, col_limit = st.columns(2)
+    with col_start:
+        start_idx = st.number_input("Start Question", min_value=1, max_value=total_q, value=1)
+    with col_limit:
+        limit_val = st.number_input("Limit", min_value=1, max_value=total_q, value=total_q)
+        
+    st.markdown("### Batch Size Control")
+    col_batch, col_parallel = st.columns(2)
+    with col_batch:
+        batch_size = st.slider(
+            "Questions per LLM call", 
+            min_value=1, 
+            max_value=total_q, 
+            value=1,
+            help="Higher batch size saves tokens but may dilute LLM attention. 1 = safest, most expensive."
+        )
+    with col_parallel:
+        max_workers = st.slider(
+            "Concurrent Workers (Parallel)",
+            min_value=1,
+            max_value=20,
+            value=5,
+            help="Number of batches to process simultaneously via asyncio."
+        )
+    
+    if st.button("🚀 Run Evaluation", type="primary", use_container_width=True):
+        progress_bar = st.progress(0, text="Starting evaluation...")
+        
+        def on_progress(done: int, total: int, msg: str):
+            pct = done / total if total > 0 else 0.0
+            progress_bar.progress(pct, text=f"Progress: {done}/{total} - {msg}")
+            
+        results = runner.run(
+            questions=questions,
+            batch_size=batch_size,
+            start=start_idx,
+            limit=limit_val,
+            on_progress=on_progress,
+            max_workers=max_workers
+        )
+        
+        progress_bar.progress(1.0, text="Evaluation complete! Saving results...")
+        
+        stats = runner.save_results(
+            results, 
+            ground_truth, 
+            questions, 
+            output_csv,
+            batch_size=batch_size,
+            max_workers=max_workers
+        )
+        st.session_state.eval_last_stats = stats
+        st.session_state.eval_history = runner.get_history(output_csv)
+        
+    if "eval_last_stats" in st.session_state:
+        stats = st.session_state.eval_last_stats
+        st.markdown('<div class="eval-stat-card" style="padding: 16px; border: 1px solid #30363d; border-radius: 8px; margin-top: 16px;">', unsafe_allow_html=True)
+        st.markdown(f"<h1 style='color: #4ade80;'>{stats['accuracy']:.1f}%</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p>Accuracy ({stats['correct']}/{stats['total']})</p>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.success(f"Saved column `{stats['column']}` to `{stats['file']}`")
+
+    st.divider()
+    st.subheader("Evaluation History")
+    
+    history = st.session_state.get("eval_history", [])
+    if not history:
+        st.info("No evaluation history found. Run an evaluation to see results here.")
+    else:
+        st.dataframe(history, use_container_width=True, hide_index=True)
+
 def render_admin_page(service: RAGService, settings: Settings) -> None:
     """Admin UI: documents, tuning, and retrieval debug tabs."""
     st.markdown('<div class="admin-page-marker"></div>', unsafe_allow_html=True)
@@ -609,15 +969,24 @@ def render_admin_page(service: RAGService, settings: Settings) -> None:
     if "admin_documents" not in st.session_state:
         _refresh_documents(service)
 
-    tab_docs, tab_settings, tab_debug = st.tabs(
-        ["Manage documents", "Settings", "Debug retrieval"]
+    tab_docs, tab_batch, tab_settings, tab_debug, tab_usage, tab_eval = st.tabs(
+        ["Manage documents", "Batch Indexing", "Settings", "Debug retrieval", "📊 Usage & Cost", "🧪 Evaluation"]
     )
 
     with tab_docs:
         _render_documents(service, settings)
+
+    with tab_batch:
+        _render_batch_tab(service, settings)
 
     with tab_settings:
         _render_tuning_tab(settings)
 
     with tab_debug:
         _render_debug_tab(service, settings)
+        
+    with tab_usage:
+        _render_usage_dashboard()
+        
+    with tab_eval:
+        _render_eval_tab(service, settings)

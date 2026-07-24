@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from src.config import Settings
@@ -72,7 +73,16 @@ def build_chunks(
 
     if include_visuals:
         chunks.extend(_collect_visual_chunks(pdf_path, settings, extracted_text))
-    return chunks
+
+    # Filter out garbage text chunks (e.g. chunks that only contain punctuation/whitespace like '.')
+    # This prevents the `[400] Sparse vector must contain at least one value` error in Pinecone.
+    valid_chunks = []
+    for chunk in chunks:
+        if chunk.content_type == "text" and not bool(re.search(r'[a-zA-Z0-9]', chunk.text)):
+            continue
+        valid_chunks.append(chunk)
+
+    return valid_chunks
 
 
 def ingest_pdf(

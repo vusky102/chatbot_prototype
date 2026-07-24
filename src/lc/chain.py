@@ -9,6 +9,8 @@ from langchain_openai import ChatOpenAI
 
 from src.config import Settings
 from src.models import SearchResult
+from langchain_core.callbacks import BaseCallbackHandler
+from src.utils.token_tracker import TokenTracker
 
 
 SYSTEM_PROMPT = """
@@ -28,6 +30,46 @@ Your sole responsibility is to answer user queries by synthesizing and analyzing
 - If the provided context simply does not contain enough evidence to formulate a complete answer, you must clearly and explicitly state that the information is missing from the knowledge base (translating this admission into the user's chosen language). Do not attempt to fill in the blanks.
 """.strip()
 
+
+class CostTrackingCallback(BaseCallbackHandler):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        self.tracker = TokenTracker()
+
+    def on_llm_end(self, response: dict, **kwargs) -> None:
+        try:
+            input_tokens = 0
+            output_tokens = 0
+            
+            # OpenAI / OpenRouter format
+            if hasattr(response, "llm_output") and isinstance(response.llm_output, dict) and "token_usage" in response.llm_output:
+                usage = response.llm_output["token_usage"]
+                input_tokens = usage.get("prompt_tokens", 0)
+                output_tokens = usage.get("completion_tokens", 0)
+            # Gemini format
+            elif hasattr(response, "generations") and response.generations:
+                gen_info = response.generations[0][0].generation_info or {}
+                if "usage_metadata" in gen_info:
+                    usage = gen_info["usage_metadata"]
+                    input_tokens = usage.get("prompt_token_count", 0)
+                    output_tokens = usage.get("candidates_token_count", 0)
+
+            if input_tokens > 0 or output_tokens > 0:
+                provider = "OpenAI"
+                if self.settings.chat_model.lower().startswith("gemini"):
+                    provider = "Google Gemini"
+                elif "/" in self.settings.chat_model:
+                    provider = "OpenRouter"
+                    
+                self.tracker.record(
+                    model=self.settings.chat_model,
+                    provider=provider,
+                    operation="chat",
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens
+                )
+        except Exception as e:
+            print(f"Warning: Failed to extract token usage: {e}")
 
 def build_chat_model(settings: Settings) -> Runnable:
     """Construct the chat LLM used by the grounded answer chain."""
@@ -121,5 +163,6 @@ class LangChainGroundedGenerator:
                 "question": question,
                 "context": context_str,
                 "history": history_messages,
-            }
+            },
+            config={"callbacks": [CostTrackingCallback(self.settings)]}
         )

@@ -119,6 +119,49 @@ def main() -> None:
         except Exception:
             pass
 
+        # USAGE MINI WIDGET
+        from src.utils.token_tracker import TokenTracker
+        from src.utils.budget import get_budget
+        tracker = TokenTracker()
+        totals = tracker.get_session_totals()
+        budget = get_budget()
+        cost = totals['total_cost']
+        pct = min(cost / budget * 100, 100) if budget > 0 else 0
+        
+        status_class = ""
+        bar_class = ""
+        if pct >= 90:
+            status_class = "over-budget"
+            bar_class = "danger"
+        elif pct >= 70:
+            status_class = "warning-budget"
+            bar_class = "warning"
+            
+        st.markdown(f"""
+        <div class="usage-mini-widget">
+            <div class="usage-mini-title">
+                <span>💰 Session Usage</span>
+            </div>
+            <div class="usage-mini-stat">
+                <span>Tokens In</span>
+                <span class="usage-mini-val">{totals['total_input']:,}</span>
+            </div>
+            <div class="usage-mini-stat">
+                <span>Tokens Out</span>
+                <span class="usage-mini-val">{totals['total_output']:,}</span>
+            </div>
+            <div class="usage-mini-cost {status_class}">
+                <span>Est. Cost</span>
+                <span>${cost:.4f}</span>
+            </div>
+            <div class="budget-bar-bg">
+                <div class="budget-bar-fill {bar_class}" style="width: {pct}%"></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.button("📊 View Details", key="nav_to_usage", width="stretch", on_click=_nav_to, args=("Admin",))
+
     try:
         settings = get_base_settings()
         service = get_rag_service()

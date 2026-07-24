@@ -15,8 +15,17 @@ class DocumentChunk:
     chunk_index: int = 0
 
     def metadata(self) -> dict[str, Any]:
+        def _truncate_str(text: str, max_bytes: int = 30000) -> str:
+            if not text:
+                return text
+            encoded = text.encode("utf-8")
+            if len(encoded) <= max_bytes:
+                return text
+            # Truncate safely, ignoring partial multi-byte characters at the boundary
+            return encoded[:max_bytes].decode("utf-8", "ignore")
+
         data: dict[str, Any] = {
-            "text": self.text,
+            "text": _truncate_str(self.text),
             "source_file": self.source_file,
             "page": self.page,
             "content_type": self.content_type,
@@ -24,7 +33,8 @@ class DocumentChunk:
             "chunk_index": self.chunk_index,
         }
         if self.image_path:
-            data["image_path"] = self.image_path
+            # Prevent base64 strings masquerading as paths from breaking the limit
+            data["image_path"] = _truncate_str(self.image_path, max_bytes=8000)
         if self.ahash:
             data["ahash"] = self.ahash
         return data

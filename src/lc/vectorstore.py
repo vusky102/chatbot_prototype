@@ -97,7 +97,8 @@ class LangChainVectorStoreAdapter(VectorStore):
                 )
             )
 
-        vectors = self._embedding.embed_documents([chunk.text for chunk in chunks])
+        safe_texts = [chunk.text[:32000] for chunk in chunks]
+        vectors = self._embedding.embed_documents(safe_texts)
         self._store.upsert(chunks, vectors)
         return [chunk.id for chunk in chunks]
 
@@ -105,7 +106,12 @@ class LangChainVectorStoreAdapter(VectorStore):
         """Embed workshop chunks and upsert them; return upserted count."""
         if not chunks:
             return 0
-        vectors = self._embedding.embed_documents([chunk.text for chunk in chunks])
+        
+        # Truncate text before embedding to prevent `tiktoken` StackOverflow 
+        # on massive strings, and to stay within embedding model context limits (~8k tokens).
+        safe_texts = [chunk.text[:32000] for chunk in chunks]
+        vectors = self._embedding.embed_documents(safe_texts)
+        
         return self._store.upsert(chunks, vectors)
 
     def similarity_search(

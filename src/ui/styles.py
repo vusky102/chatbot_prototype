@@ -1511,6 +1511,116 @@ hr {
     grid-template-columns: 1fr;
   }
 }
+
+/* USAGE TRACKER STYLES */
+.usage-mini-widget {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    transition: all 0.2s ease;
+}
+
+.usage-mini-widget:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.usage-mini-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.usage-mini-stat {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #475569;
+    margin-bottom: 6px;
+    font-family: 'Fira Code', 'Courier New', monospace;
+}
+
+.usage-mini-val {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.usage-mini-cost {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 700;
+    color: #059669;
+    font-family: 'Fira Code', 'Courier New', monospace;
+}
+
+.usage-mini-cost.over-budget {
+    color: #dc2626;
+}
+
+.usage-mini-cost.warning-budget {
+    color: #d97706;
+}
+
+.budget-bar-bg {
+    height: 5px;
+    background-color: #e2e8f0;
+    border-radius: 3px;
+    margin-top: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+}
+
+.budget-bar-fill {
+    height: 100%;
+    background-color: #059669;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.budget-bar-fill.warning {
+    background-color: #d97706;
+}
+
+.budget-bar-fill.danger {
+    background-color: #dc2626;
+}
+
+.usage-dashboard-card {
+    background-color: #f8fafc;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.usage-dashboard-val {
+    font-size: 28px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 8px 0;
+    font-family: 'Fira Code', 'Courier New', monospace;
+}
+
+.usage-dashboard-label {
+    font-size: 13px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
 </style>
 """
 
@@ -1854,6 +1964,57 @@ def inject_styles() -> None:
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
         }
+
+        /* Usage Tracker Dark Mode Overrides */
+        .usage-mini-widget {
+          background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.6) 100%) !important;
+          border-color: rgba(255, 255, 255, 0.12) !important;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
+        }
+        .usage-mini-widget:hover {
+          border-color: rgba(255, 255, 255, 0.25) !important;
+        }
+        .usage-mini-title {
+          color: #f8fafc !important;
+        }
+        .usage-mini-stat {
+          color: #94a3b8 !important;
+        }
+        .usage-mini-val {
+          color: #ffffff !important;
+        }
+        .usage-mini-cost {
+          border-top-color: rgba(255, 255, 255, 0.12) !important;
+          color: #10b981 !important;
+        }
+        .usage-mini-cost.over-budget {
+          color: #ef4444 !important;
+        }
+        .usage-mini-cost.warning-budget {
+          color: #f59e0b !important;
+        }
+        .budget-bar-bg {
+          background-color: rgba(255, 255, 255, 0.12) !important;
+        }
+        .budget-bar-fill {
+          background-color: #10b981 !important;
+        }
+        .budget-bar-fill.warning {
+          background-color: #f59e0b !important;
+        }
+        .budget-bar-fill.danger {
+          background-color: #ef4444 !important;
+        }
+        .usage-dashboard-card {
+          background-color: #1e293b !important;
+          border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+        .usage-dashboard-val {
+          color: #f8fafc !important;
+        }
+        .usage-dashboard-label {
+          color: #94a3b8 !important;
+        }
         """
 
     image_search_styles = """
@@ -1879,5 +2040,35 @@ def inject_styles() -> None:
     }
     """
 
-    st.markdown(APP_CSS + f"<style>{theme_vars}\n{image_search_styles}</style>", unsafe_allow_html=True)
+    eval_styles = """
+    /* Eval Progress / Range Layout */
+    .eval-progress-box {
+      background: var(--md-sys-color-surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      border: 1px solid var(--md-sys-color-outline);
+    }
+    .eval-stat-card {
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      margin: 16px 0;
+      border: 1px solid var(--md-sys-color-outline-variant);
+    }
+    .eval-stat-card h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      font-weight: 700;
+    }
+    .eval-stat-card p {
+      margin: 0;
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+    """
+
+    st.markdown(APP_CSS + f"<style>{theme_vars}\n{image_search_styles}\n{eval_styles}</style>", unsafe_allow_html=True)
 

@@ -177,10 +177,30 @@ class PineconeVectorStore(VectorStoreBackend):
             for chunk, vector, sparse in zip(chunks, vectors, sparse_vectors)
         ]
         for batch in _batches(records, batch_size):
-            self.index.upsert(
-                vectors=batch,
-                namespace=self.settings.pinecone_namespace,
-            )
+            try:
+                self.index.upsert(
+                    vectors=batch,
+                    namespace=self.settings.pinecone_namespace,
+                )
+            except Exception as e:
+                import logging
+                from src.utils.logger import get_logger
+                logger = get_logger("pinecone_upsert")
+                logger.error(f"Failed to upsert batch. Error: {e}")
+                
+                # Check for empty sparse vectors in this batch to help debugging
+                for record in batch:
+                    sparse = record.get("sparse_values")
+                    if sparse is not None:
+                        if not sparse.get("indices") or not sparse.get("values"):
+                            source_file = record.get("metadata", {}).get("source_file", "unknown")
+                            chunk_text = record.get("metadata", {}).get("text", "")
+                            logger.error(
+                                f"FOUND EMPTY SPARSE VECTOR! "
+                                f"File: {source_file} | Chunk ID: {record['id']} | "
+                                f"Text snippet: {repr(chunk_text[:100])}"
+                            )
+                raise  # Re-raise to maintain original behavior
         
         return len(records)
 

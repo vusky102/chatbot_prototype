@@ -87,6 +87,20 @@ class VisualCaptioner:
             ],
             config=types.GenerateContentConfig(temperature=0.0),
         )
+        from src.utils.token_tracker import TokenTracker
+        tracker = TokenTracker()
+        try:
+            if hasattr(response, "usage_metadata") and response.usage_metadata:
+                tracker.record(
+                    model=self.model,
+                    provider="Google Gemini",
+                    operation="caption",
+                    input_tokens=response.usage_metadata.prompt_token_count or 0,
+                    output_tokens=response.usage_metadata.candidates_token_count or 0
+                )
+        except Exception as e:
+            print(f"Warning: Failed to track visual caption usage: {e}")
+
         return (response.text or "").strip()
 
     def _caption_openai(self, image_bytes: bytes, mime_type: str) -> str:
@@ -109,6 +123,20 @@ class VisualCaptioner:
             ],
             temperature=0.0,
         )
+        from src.utils.token_tracker import TokenTracker
+        tracker = TokenTracker()
+        try:
+            if hasattr(response, "usage") and response.usage:
+                tracker.record(
+                    model=self.model,
+                    provider="OpenAI",
+                    operation="caption",
+                    input_tokens=response.usage.prompt_tokens or 0,
+                    output_tokens=response.usage.completion_tokens or 0
+                )
+        except Exception as e:
+            print(f"Warning: Failed to track visual caption usage: {e}")
+            
         return (response.choices[0].message.content or "").strip()
 
 

@@ -12,6 +12,7 @@ import os
 import argparse
 import base64
 import concurrent.futures
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -386,6 +387,27 @@ def process_pdf(pdf_path, output_dir, ai_client, model, provider, render_dpi=150
         }
 
     pdf_output_dir = Path(output_dir) / pdf_path.stem
+    
+    # ─── Caching Logic ───────────────────────────────────────────────────────────
+    pdf_hash = hashlib.sha256(pdf_path.read_bytes()).hexdigest()
+    cache_path = pdf_output_dir / "extraction_cache.json"
+
+    if cache_path.exists():
+        try:
+            cache_data = json.loads(cache_path.read_text(encoding="utf-8"))
+            if cache_data.get("pdf_hash") == pdf_hash:
+                print(f"    -> Using cached extraction from {cache_path.name}")
+                doc.close()
+                return {
+                    "embedded_count": cache_data.get("embedded_count", 0),
+                    "ai_extracted_count": cache_data.get("ai_extracted_count", 0),
+                    "output_dir": pdf_output_dir,
+                    "elements": cache_data.get("elements", [])
+                }
+        except Exception as e:
+            print(f"    -> Cache read failed: {e}")
+    # ─────────────────────────────────────────────────────────────────────────────
+
     total_embedded = 0
     total_ai_extracted = 0
     extracted_elements = []
@@ -471,12 +493,26 @@ def process_pdf(pdf_path, output_dir, ai_client, model, provider, render_dpi=150
     print(f"    AI-detected elements extracted: {total_ai_extracted}")
     doc.close()
 
-    return {
+    result = {
         "embedded_count": total_embedded,
         "ai_extracted_count": total_ai_extracted,
         "output_dir": pdf_output_dir,
         "elements": extracted_elements
     }
+
+    cache_data = {
+        "pdf_hash": pdf_hash,
+        "embedded_count": total_embedded,
+        "ai_extracted_count": total_ai_extracted,
+        "elements": extracted_elements
+    }
+    try:
+        pdf_output_dir.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(json.dumps(cache_data, indent=2), encoding="utf-8")
+    except Exception as e:
+        print(f"Failed to write cache: {e}")
+
+    return result
 
 
 def extract_images(pdf_path, output_dir="output", provider=None, render_dpi=150, crop_dpi=300):
