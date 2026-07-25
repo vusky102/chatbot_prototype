@@ -43,5 +43,23 @@
     "accuracy": 65.33682145192937,
     "correct": 999,
     "total": 1529
+  },
+  "ai_answer_20260725_112842": {
+    "timestamp": "20260725_112842",
+    "batch_size": 1,
+    "max_workers": 15,
+    "model": "GPT-4o-mini",
+    "accuracy": 15.173315892740352,
+    "correct": 232,
+    "total": 1529
+  },
+  "ai_answer_20260725_120724": {
+    "timestamp": "20260725_120724",
+    "batch_size": 1,
+    "max_workers": 20,
+    "model": "GPT-4o-mini",
+    "accuracy": 73.38129496402878,
+    "correct": 1122,
+    "total": 1529
   }
 }

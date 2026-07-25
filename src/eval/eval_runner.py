@@ -139,7 +139,10 @@ class EvalRunner:
                     },
                     config={"callbacks": [CostTrackingCallback(self.settings)]}
                 )
-            except Exception:
+            except Exception as e:
+                import traceback
+                print(f"Error evaluating Q{q['question_number']}: {type(e).__name__} - {e}")
+                # traceback.print_exc()
                 ans = "X"
             return {"question_number": q["question_number"], "ai_answer": ans}
 
@@ -156,7 +159,8 @@ class EvalRunner:
                     {"batched_content": batched_content},
                     config={"callbacks": [CostTrackingCallback(self.settings)]}
                 )
-            except Exception:
+            except Exception as e:
+                print(f"Error evaluating batch: {type(e).__name__} - {e}")
                 batch_results = {}
                 
             results = []

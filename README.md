@@ -16,6 +16,8 @@ A web-based internal assistant powered by Retrieval-Augmented Generation (RAG). 
 - **Embedding Deduplication**: Query-time cosine similarity filtering to remove duplicate information across multiple documents.
 - **Multi-Provider Models**: Flexible support for OpenAI, Google Gemini, and OpenRouter LLMs & Embeddings.
 - **Voice Output**: Edge TTS text-to-speech integration for English and Vietnamese response vocalization.
+- **Usage & Cost Monitoring**: Persistent token/cost history, CSV export, and a configurable warning threshold (`$9.00` in the current `budget_config.json`).
+- **Model Evaluation**: Reference multiple-choice evaluation with configurable batching, up to 20 concurrent workers, timestamped accuracy history, and visible per-question/batch errors.
 
 ---
 
@@ -41,7 +43,8 @@ src/
     ahash.py                 Average perceptual hash for images
 
   lc/                        LangChain Integration Layer
-    chain.py                 Grounded answer generator (LLM chain)
+    chain.py                 Grounded answer generator + async usage callback
+    eval_chain.py            Single-question and batch evaluation chains
     retriever.py             LangChain retriever + dedup logic
     vectorstore.py           Backend-agnostic LangChain VectorStore adapter
     embeddings.py            Embedding model builder
@@ -63,9 +66,20 @@ src/
 
   utils/
     model_scanner.py         Multi-provider model discovery
+    token_tracker.py         Persistent token and estimated-cost tracking
+    budget.py                Cost-warning threshold management
+
+  eval/
+    eval_runner.py           Concurrent Q&A evaluation and result history
 
 test/
   test_chroma_vector_store.py Unit tests for ChromaDB backend & factory logic
+
+budget_config.json           Local warning threshold (currently $9.00)
+usage_log.json               Persistent usage history
+evaluation_results.csv       Timestamped evaluation answer columns
+evaluation_results_metadata.json
+                             Evaluation settings and accuracy history
 ```
 
 ---
@@ -141,6 +155,8 @@ Open [http://localhost:8501](http://localhost:8501) in your browser.
   - Ingest PDF documents with customizable chunk size, overlap, and strategies.
   - Dynamically switch between **Pinecone Cloud** and **ChromaDB Local** backends.
   - Monitor index vector stats and live ingestion terminal logs.
+  - Review/export usage and estimated cost, and configure the budget warning.
+  - Run the Q&A evaluation with configurable range, batch size, and concurrency.
 - **🌌 Visualize**: Interactive embedding space visualizations including 3D PCA Galaxy, 2D t-SNE scatter, and physics-based network graph views.
 
 ---
@@ -152,6 +168,20 @@ Run backend unit tests using `pytest`:
 ```bash
 python -m pytest test/test_chroma_vector_store.py
 ```
+
+---
+
+## 📊 Evaluation and Cost Tracking
+
+Open **Admin → 🧪 Evaluation** to run the reference multiple-choice question set. Every run appends a timestamped answer column to `evaluation_results.csv` and records the model, batch size, worker count, accuracy, and totals in `evaluation_results_metadata.json`. Failed questions are saved as `X`; the console reports the exception type and message for easier diagnosis.
+
+The CLI runner is also available:
+
+```bash
+python scripts/evaluate_qa.py --batch-size 1 --start 1 --limit 100
+```
+
+The Admin UI supports up to 20 concurrent workers. Async LangChain callbacks record token usage from concurrent model calls in `usage_log.json`. **Admin → 📊 Usage & Cost** shows session/history totals and lets an administrator change the warning threshold stored in `budget_config.json`. This is an alert threshold, not a hard request limit.
 
 ---
 

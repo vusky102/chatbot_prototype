@@ -18,6 +18,9 @@ The project includes:
 - Image-based retrieval via perceptual hashing (aHash)
 - Edge TTS voice output with language detection
 - LangChain-based RAG pipeline with strict grounding prompt
+- Persistent token and estimated-cost tracking for chat, embeddings, and evaluation
+- Configurable cost warning threshold (currently $9.00 in budget_config.json)
+- Built-in multiple-choice evaluation with batching, parallel workers, accuracy history, and per-question error diagnostics
 
 
 Architecture
@@ -42,7 +45,8 @@ Architecture
       ahash.py                 Average perceptual hash for images
 
     lc/                        LangChain integration layer
-      chain.py                 Grounded answer generator (LLM chain)
+      chain.py                 Grounded answer generator + async usage callback
+      eval_chain.py            Single-question and batched evaluation chains
       retriever.py             LangChain retriever + dedup logic
       vectorstore.py           LangChain VectorStore adapter over vector store backends
       embeddings.py            Embedding model builder
@@ -64,6 +68,20 @@ Architecture
 
     utils/
       model_scanner.py         Multi-provider model discovery
+      token_tracker.py         Session/persistent usage and cost tracking
+      budget.py                Local cost-warning threshold management
+
+    eval/
+      eval_runner.py           Concurrent Q&A evaluation and result history
+
+  scripts/
+    evaluate_qa.py             Command-line evaluation entry point
+
+  budget_config.json           Local cost-warning threshold
+  usage_log.json               Persistent usage records
+  evaluation_results.csv       Timestamped evaluation answers
+  evaluation_results_metadata.json
+                               Model, concurrency, accuracy, and run metadata
 
   test/
     test_chroma_vector_store.py Unit tests for ChromaDB backend & factory logic
@@ -185,6 +203,9 @@ Streamlit Pages
                Select active Database Backend (Pinecone Cloud vs local ChromaDB).
                View index statistics, manage source files, and monitor
                ingestion progress with real-time terminal-style logs.
+               The Usage & Cost tab shows token/cost history and controls the
+               warning budget. The Evaluation tab runs the reference Q&A set
+               with configurable batching and parallelism.
 
   Visualize -- Search and explore embedding relationships.
                - 3D PCA Galaxy View (Plotly interactive 3D scatter)
@@ -199,6 +220,36 @@ Testing
 Run unit tests using pytest:
 
   python -m pytest test/test_chroma_vector_store.py
+
+
+Evaluation
+----------
+
+Use Admin -> Evaluation to select a start question, limit, questions per LLM
+call, and up to 20 concurrent workers. Each run appends a timestamped answer
+column to evaluation_results.csv and run details to
+evaluation_results_metadata.json. Failed questions are marked X and now print
+the exception type and message to the console.
+
+The legacy command-line runner is also available:
+
+  python scripts/evaluate_qa.py --batch-size 1 --start 1 --limit 100
+
+Note: the CLI writes its result CSV under docs/Training_data_GD4/, while the
+Admin evaluation tab writes evaluation_results.csv in the project root.
+
+
+Usage and Cost Tracking
+-----------------------
+
+LangChain callbacks record model token usage asynchronously so concurrent
+evaluation calls are tracked correctly. Records persist in usage_log.json and
+are visible under Admin -> Usage & Cost. budget_config.json contains the local
+warning threshold in US dollars; the current configured value is:
+
+  {"budget": 9.0}
+
+The threshold displays warnings but does not stop requests automatically.
 
 
 Terminal CLI (Legacy)

@@ -9,7 +9,7 @@ from langchain_openai import ChatOpenAI
 
 from src.config import Settings
 from src.models import SearchResult
-from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.callbacks import AsyncCallbackHandler
 from src.utils.token_tracker import TokenTracker
 
 
@@ -31,12 +31,12 @@ Your sole responsibility is to answer user queries by synthesizing and analyzing
 """.strip()
 
 
-class CostTrackingCallback(BaseCallbackHandler):
+class CostTrackingCallback(AsyncCallbackHandler):
     def __init__(self, settings: Settings):
         self.settings = settings
         self.tracker = TokenTracker()
 
-    def on_llm_end(self, response: dict, **kwargs) -> None:
+    async def on_llm_end(self, response: dict, **kwargs) -> None:
         try:
             input_tokens = 0
             output_tokens = 0
