@@ -202651,5 +202651,86 @@
     "input_tokens": 1948,
     "output_tokens": 145,
     "estimated_cost": 0.00042686000000000004
+  },
+  {
+    "timestamp": "2026-07-25T13:39:35.908315",
+    "model": "text-embedding-3-small",
+    "provider": "OpenAI",
+    "operation": "embedding",
+    "input_tokens": 63,
+    "output_tokens": 0,
+    "estimated_cost": 1.26e-06
+  },
+  {
+    "timestamp": "2026-07-25T13:39:36.019090",
+    "model": "text-embedding-3-small",
+    "provider": "OpenAI",
+    "operation": "embedding",
+    "input_tokens": 63,
+    "output_tokens": 0,
+    "estimated_cost": 1.26e-06
+  },
+  {
+    "timestamp": "2026-07-25T13:39:41.150215",
+    "model": "GPT-4o-mini",
+    "provider": "OpenAI",
+    "operation": "chat",
+    "input_tokens": 2003,
+    "output_tokens": 136,
+    "estimated_cost": 0.00043027000000000007
+  },
+  {
+    "timestamp": "2026-07-25T13:56:47.586913",
+    "model": "text-embedding-3-small",
+    "provider": "OpenAI",
+    "operation": "embedding",
+    "input_tokens": 906,
+    "output_tokens": 0,
+    "estimated_cost": 1.812e-05
+  },
+  {
+    "timestamp": "2026-07-25T13:56:47.694602",
+    "model": "text-embedding-3-small",
+    "provider": "OpenAI",
+    "operation": "embedding",
+    "input_tokens": 906,
+    "output_tokens": 0,
+    "estimated_cost": 1.812e-05
+  },
+  {
+    "timestamp": "2026-07-25T13:56:57.039788",
+    "model": "GPT-4o-mini",
+    "provider": "OpenAI",
+    "operation": "chat",
+    "input_tokens": 4411,
+    "output_tokens": 669,
+    "estimated_cost": 0.00119141
+  },
+  {
+    "timestamp": "2026-07-25T13:58:17.954737",
+    "model": "text-embedding-3-small",
+    "provider": "OpenAI",
+    "operation": "embedding",
+    "input_tokens": 947,
+    "output_tokens": 0,
+    "estimated_cost": 1.894e-05
+  },
+  {
+    "timestamp": "2026-07-25T13:58:18.061825",
+    "model": "text-embedding-3-small",
+    "provider": "OpenAI",
+    "operation": "embedding",
+    "input_tokens": 947,
+    "output_tokens": 0,
+    "estimated_cost": 1.894e-05
+  },
+  {
+    "timestamp": "2026-07-25T13:58:24.495130",
+    "model": "GPT-4o-mini",
+    "provider": "OpenAI",
+    "operation": "chat",
+    "input_tokens": 5475,
+    "output_tokens": 321,
+    "estimated_cost": 0.00114261
   }
 ]

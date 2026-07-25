@@ -37,3 +37,7 @@ __pycache__/
 venv/
 env/
 .env/
+
+# Usage logs
+usage_log.json
+evaluation_results_metadata.json
