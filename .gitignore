@@ -5,7 +5,10 @@
 chroma_db/
 generated_audio/
 output/
-docs/Training_data_GD4/
+docs/Training_data_GD4/*
+!docs/Training_data_GD4/input/
+docs/Training_data_GD4/input/*
+!docs/Training_data_GD4/input/question.csv
 
 # Uploaded / test media
 *.pdf
