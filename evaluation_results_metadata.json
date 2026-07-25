@@ -34,5 +34,14 @@
     "accuracy": 86.98495748855461,
     "correct": 1330,
     "total": 1529
+  },
+  "ai_answer_20260725_013501": {
+    "timestamp": "20260725_013501",
+    "batch_size": 1,
+    "max_workers": 15,
+    "model": "GPT-5.4-mini",
+    "accuracy": 65.33682145192937,
+    "correct": 999,
+    "total": 1529
   }
 }

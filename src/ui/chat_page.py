@@ -12,6 +12,7 @@ import streamlit.components.v1 as components
 from src.rag import RAGService
 from src.tts import TextToSpeechRouter
 from src.config import Settings
+from src.ui.markdown import normalize_math_delimiters
 from src.utils.image_resolver import resolve_image_path
 
 
@@ -255,32 +256,40 @@ def _render_assistant_message(
         style, sources_html = _carousel_html(sources, message_id=message_id)
         st.markdown(style, unsafe_allow_html=True)
 
-    bubble_class = "bubble bubble-assistant"
-    if sources:
-        bubble_class += " has-sources"
-
     cache_key = f"assistant_{message_id}"
     safe_key = html.escape(cache_key)
-    with st.container():
+    # Assistant content must go through Streamlit's Markdown renderer instead of
+    # being HTML-escaped. Besides Markdown formatting, this gives us Streamlit's
+    # built-in KaTeX renderer without adding browser-side scripts or a CDN.
+    with st.container(key=f"assistant_row_{message_id}"):
+        # Keep the row compatible with the TTS hiding rule in styles.py. That
+        # rule only moves the hidden button's wrapper off-screen when it does
+        # not belong to a visible message row.
         st.markdown(
-            (
-                '<div class="msg-row msg-row-assistant">'
-                '<div class="avatar avatar-assistant">smart_toy</div>'
-                '<div class="assistant-stack">'
-                f'<div class="{bubble_class}">'
-                '<div class="bubble-header">'
-                '<span class="bubble-label">Assistant</span>'
-                f'<span class="tts-glyph tts-key-{safe_key}" title="Play audio">'
-                "volume_up</span>"
-                "</div>"
-                f'<div class="assistant-answer">{_as_html_text(content)}</div>'
-                f"{sources_html}"
-                "</div>"
-                "</div>"
-                "</div>"
-            ),
+            '<span class="msg-row assistant-row-marker"></span>',
             unsafe_allow_html=True,
         )
+        avatar_col, answer_col = st.columns([0.035, 0.965], gap="small")
+        with avatar_col:
+            st.markdown(
+                '<div class="avatar avatar-assistant">smart_toy</div>',
+                unsafe_allow_html=True,
+            )
+        with answer_col:
+            with st.container(key=f"assistant_bubble_{message_id}"):
+                st.markdown(
+                    (
+                        '<div class="bubble-header">'
+                        '<span class="bubble-label">Assistant</span>'
+                        f'<span class="tts-glyph tts-key-{safe_key}" title="Play audio">'
+                        "volume_up</span>"
+                        "</div>"
+                    ),
+                    unsafe_allow_html=True,
+                )
+                st.markdown(normalize_math_delimiters(content))
+                if sources_html:
+                    st.markdown(sources_html, unsafe_allow_html=True)
         _tts_hidden_button(cache_key, content)
 
     if sources:

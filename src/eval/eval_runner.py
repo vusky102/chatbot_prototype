@@ -194,6 +194,13 @@ class EvalRunner:
                         on_progress(done, total, f"Completed Q{res['question_number']}")
 
         # Handle Streamlit's environment (asyncio.run is safe if no loop is running)
+        import threading
+        try:
+            from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
+            ctx = get_script_run_ctx()
+        except ImportError:
+            ctx = None
+
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -201,9 +208,17 @@ class EvalRunner:
 
         if loop and loop.is_running():
             import concurrent.futures
+            
+            def run_in_pool():
+                if ctx:
+                    add_script_run_ctx(threading.current_thread(), ctx)
+                return asyncio.run(_run_async())
+                
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                pool.submit(asyncio.run, _run_async()).result()
+                pool.submit(run_in_pool).result()
         else:
+            if ctx:
+                add_script_run_ctx(threading.current_thread(), ctx)
             asyncio.run(_run_async())
 
         # Sort answers by question number to restore original order

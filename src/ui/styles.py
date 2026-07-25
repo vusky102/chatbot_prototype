@@ -812,6 +812,38 @@ div[data-testid="stHorizontalBlock"]:has(button[kind="secondary"]) button,
   color: #202124 !important;
 }
 
+[class*="st-key-assistant_row_"] {
+  width: 100%;
+}
+
+.assistant-row-marker {
+  display: none !important;
+}
+
+[class*="st-key-assistant_bubble_"] {
+  background: #e8f0fe;
+  color: #202124 !important;
+  border: 1px solid #d2e3fc;
+  border-radius: 0.75rem;
+  box-shadow: var(--md-elevation-1);
+  padding: 0.8rem 1rem 0.9rem;
+  min-width: 0;
+}
+
+[class*="st-key-assistant_bubble_"] [data-testid="stMarkdownContainer"] {
+  color: #202124 !important;
+}
+
+[class*="st-key-assistant_bubble_"] [data-testid="stMarkdownContainer"] > :last-child {
+  margin-bottom: 0;
+}
+
+[class*="st-key-assistant_bubble_"] .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.3rem 0;
+}
+
 .assistant-stack {
   flex: 1;
   min-width: 0;
@@ -1679,13 +1711,16 @@ def inject_styles() -> None:
         .bubble-user p, .bubble-user span:not(.bubble-label) {
           color: #ffffff !important;
         }
-        .bubble-assistant {
+        .bubble-assistant,
+        [class*="st-key-assistant_bubble_"] {
           background: #000000 !important;
           color: #ffffff !important;
           border-color: transparent !important;
         }
         .bubble-assistant, .bubble-assistant p, .bubble-assistant span:not(.bubble-label):not(.type-pill):not(.score-pill),
         .assistant-answer, .assistant-answer p, .assistant-answer span:not(.bubble-label):not(.type-pill):not(.score-pill),
+        [class*="st-key-assistant_bubble_"] [data-testid="stMarkdownContainer"],
+        [class*="st-key-assistant_bubble_"] [data-testid="stMarkdownContainer"] *,
         .typing-text, .typing-row {
           color: #ffffff !important;
         }
@@ -2071,4 +2106,3 @@ def inject_styles() -> None:
     """
 
     st.markdown(APP_CSS + f"<style>{theme_vars}\n{image_search_styles}\n{eval_styles}</style>", unsafe_allow_html=True)
-
