@@ -540,6 +540,7 @@ def _group_sources_by_file(sources: list[dict]) -> list[dict]:
                 "content_types": [],
                 "headings": [],
                 "image_paths": [],
+                "texts": [],
             }
 
         item = grouped[key]
@@ -552,6 +553,10 @@ def _group_sources_by_file(sources: list[dict]) -> list[dict]:
             item["headings"].append(heading)
         if image_path and image_path not in item["image_paths"]:
             item["image_paths"].append(image_path)
+        
+        text = str(source.get("text") or "").strip()
+        if text and text not in item["texts"]:
+            item["texts"].append(text)
 
     cards: list[dict] = []
     for key in order:
@@ -569,6 +574,7 @@ def _group_sources_by_file(sources: list[dict]) -> list[dict]:
                 "heading": headings[0] if len(headings) == 1 else "",
                 "hit_count": len(pages) or 1,
                 "image_paths": list(item["image_paths"]),
+                "texts": list(item["texts"]),
             }
         )
     return cards
@@ -589,6 +595,17 @@ def _source_card_html(source: dict) -> str:
     page_label = source.get("page_label") or _format_pages(
         [int(source.get("page", 0) or 0)]
     )
+    texts = source.get("texts") or []
+    text_bit = ""
+    if texts:
+        combined_text = "\n\n---\n\n".join(texts)
+        text_bit = (
+            '<details class="source-text-details">'
+            '<summary>Xem nội dung text</summary>'
+            f'<div class="source-text-content">{html.escape(combined_text)}</div>'
+            '</details>'
+        )
+
     return (
         '<div class="source-mini-card">'
         '<div class="source-mini-top">'
@@ -601,6 +618,7 @@ def _source_card_html(source: dict) -> str:
         "</div>"
         f'<div class="source-mini-meta">{html.escape(str(page_label))}</div>'
         f"{heading_bit}"
+        f"{text_bit}"
         "</div>"
     )
 

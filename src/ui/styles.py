@@ -991,6 +991,7 @@ div[data-testid="stElementContainer"]:has(.tts-btn-marker) {
 .source-carousel-track {
   display: flex;
   gap: 12px;
+  align-items: flex-start;
   transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
   will-change: transform;
 }
@@ -1095,6 +1096,42 @@ div[data-testid="stElementContainer"]:has(.tts-btn-marker) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.source-text-details {
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+}
+.source-text-details summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--md-sys-color-primary);
+  outline: none;
+  list-style: none; /* Hide default triangle on some browsers */
+}
+.source-text-details summary::-webkit-details-marker {
+  display: none;
+}
+.source-text-details summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 0.25rem;
+  transition: transform 0.2s;
+}
+.source-text-details[open] summary::before {
+  transform: rotate(90deg);
+}
+.source-text-content {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: var(--md-sys-color-surface-container);
+  border-radius: var(--md-radius-sm, 4px);
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  color: var(--md-sys-color-on-surface);
+  line-height: 1.4;
+  border: 1px solid var(--md-sys-color-outline-variant);
 }
 
 .score-pill {

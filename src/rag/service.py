@@ -58,6 +58,7 @@ class RAGService:
                 "score": result.score,
                 "image_path": result.image_path,
                 "ahash": result.ahash,
+                "text": result.text,
             }
             for result in results
         ]
@@ -121,6 +122,7 @@ class RAGService:
                 "score": result.score,
                 "image_path": result.image_path,
                 "ahash": result.ahash,
+                "text": result.text,
             }
             for result in combined_results
         ]
