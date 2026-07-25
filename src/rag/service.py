@@ -68,7 +68,7 @@ class RAGService:
         image_path_or_hash: str,
         question: str = "",
         history: list[dict[str, str]] | None = None,
-        max_distance: int = 8,
+        max_distance: int = 12,
     ) -> dict[str, object]:
         """Retrieve context from visual similarity, caption semantics, and text query to generate a grounded answer."""
         image_results = self.retrieve_image_by_hash(image_path_or_hash, max_distance=max_distance)

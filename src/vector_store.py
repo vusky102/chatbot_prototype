@@ -273,8 +273,22 @@ class PineconeVectorStore(VectorStoreBackend):
         if not query_hash:
             return []
 
+        # Use a near-zero vector to bypass Pinecone's zero-vector restriction and rapidly fetch metadata
+        query_vector = [1e-5] * self.settings.embedding_dimension
+        try:
+            response = self.index.query(
+                vector=query_vector,
+                top_k=10000,
+                include_metadata=True,
+                namespace=self.settings.pinecone_namespace,
+                filter={"content_type": {"$in": ["image", "chart", "table", "figure"]}}
+            )
+            metadata_list = [dict(match.metadata or {}) for match in response.matches]
+        except Exception:
+            metadata_list = list(self._iter_metadata(require_ahash=True))
+
         matches: list[SearchResult] = []
-        for metadata in self._iter_metadata(require_ahash=True):
+        for metadata in metadata_list:
             stored_hash = str(metadata.get("ahash", ""))
             if not stored_hash:
                 continue
