@@ -1,22 +1,4 @@
 {
-  "ai_answer_20260725_000308": {
-    "timestamp": "20260725_000308",
-    "batch_size": 1,
-    "max_workers": 10,
-    "model": "GPT-4.1-mini",
-    "accuracy": 84.95748855461086,
-    "correct": 1299,
-    "total": 1529
-  },
-  "ai_answer_20260725_002811": {
-    "timestamp": "20260725_002811",
-    "batch_size": 1,
-    "max_workers": 10,
-    "model": "GPT-4.1-mini",
-    "accuracy": 85.15369522563768,
-    "correct": 1302,
-    "total": 1529
-  },
   "ai_answer_20260725_005651": {
     "timestamp": "20260725_005651",
     "batch_size": 1,
@@ -35,24 +17,6 @@
     "correct": 1330,
     "total": 1529
   },
-  "ai_answer_20260725_013501": {
-    "timestamp": "20260725_013501",
-    "batch_size": 1,
-    "max_workers": 15,
-    "model": "GPT-5.4-mini",
-    "accuracy": 65.33682145192937,
-    "correct": 999,
-    "total": 1529
-  },
-  "ai_answer_20260725_112842": {
-    "timestamp": "20260725_112842",
-    "batch_size": 1,
-    "max_workers": 15,
-    "model": "GPT-4o-mini",
-    "accuracy": 15.173315892740352,
-    "correct": 232,
-    "total": 1529
-  },
   "ai_answer_20260725_120724": {
     "timestamp": "20260725_120724",
     "batch_size": 1,
@@ -60,6 +24,24 @@
     "model": "GPT-4o-mini",
     "accuracy": 73.38129496402878,
     "correct": 1122,
+    "total": 1529
+  },
+  "ai_answer_20260725_132248": {
+    "timestamp": "20260725_132248",
+    "batch_size": 3,
+    "max_workers": 20,
+    "model": "GPT-4o-mini",
+    "accuracy": 81.09875735775016,
+    "correct": 1240,
+    "total": 1529
+  },
+  "ai_answer_20260725_132835": {
+    "timestamp": "20260725_132835",
+    "batch_size": 14,
+    "max_workers": 20,
+    "model": "GPT-4o-mini",
+    "accuracy": 80.96795291039895,
+    "correct": 1238,
     "total": 1529
   }
 }

@@ -17,7 +17,7 @@ DO NOT output any explanations. DO NOT output any other text.
 
 SYSTEM_PROMPT_BATCH = """
 You are taking a multiple-choice exam. For each numbered question below, based ONLY on its provided context, select the correct answer(s).
-Output exactly one line per question in the format: {number}:{letter(s)}
+Output exactly one line per question in the format: {{number}}:{{letter(s)}}
 Example:
 1:A
 2:B,C
