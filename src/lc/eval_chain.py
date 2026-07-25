@@ -10,14 +10,15 @@ from src.lc.chain import build_chat_model
 
 
 SYSTEM_PROMPT_SINGLE = """
-You are taking a multiple-choice exam. Based ONLY on the provided context, select the correct answer(s).
-Output ONLY the letter(s): A, B, C, or D. If multiple answers are correct, separate them with commas (e.g. A,C).
+You are taking a multiple-choice exam. Based ONLY on the provided context, select exactly {num_answers} correct answer(s).
+Output ONLY the letter(s): A, B, C, or D. If {num_answers} > 1, separate them with commas (e.g. A,C).
 DO NOT output any explanations. DO NOT output any other text.
 """.strip()
 
 SYSTEM_PROMPT_BATCH = """
-You are taking a multiple-choice exam. For each numbered question below, based ONLY on its provided context, select the correct answer(s).
+You are taking a multiple-choice exam. For each numbered question below, based ONLY on its provided context, select the requested number of correct answers as specified in the question text.
 Output exactly one line per question in the format: {{number}}:{{letter(s)}}
+If a question requires multiple answers, separate the letters with commas (e.g., A,C).
 Example:
 1:A
 2:B,C
@@ -65,7 +66,7 @@ def parse_batch_answers(output: str) -> dict[int, str]:
 def build_single_eval_chain(settings: Settings) -> Runnable:
     prompt = ChatPromptTemplate.from_messages([
         ("system", SYSTEM_PROMPT_SINGLE),
-        ("human", "Question: {question}\n\nA: {a}\nB: {b}\nC: {c}\nD: {d}\n\nContext:\n{context}"),
+        ("human", "Question (choose {num_answers} answer(s)): {question}\n\nA: {a}\nB: {b}\nC: {c}\nD: {d}\n\nContext:\n{context}"),
     ])
     llm = build_chat_model(settings)
     

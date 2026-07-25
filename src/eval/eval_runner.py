@@ -84,7 +84,8 @@ class EvalRunner:
                         "B": row[2],
                         "C": row[3],
                         "D": row[4],
-                        "source_folder": row[5]
+                        "source_folder": row[5],
+                        "num_answers": int(row[6]) if len(row) > 6 and row[6].isdigit() else 1
                     })
         return questions
 
@@ -135,7 +136,8 @@ class EvalRunner:
                         "b": q["B"],
                         "c": q["C"],
                         "d": q["D"],
-                        "context": context
+                        "context": context,
+                        "num_answers": q.get("num_answers", 1)
                     },
                     config={"callbacks": [CostTrackingCallback(self.settings)]}
                 )
@@ -150,7 +152,8 @@ class EvalRunner:
             batched_content = ""
             for q in batch:
                 context = await asyncio.to_thread(self._retrieve_context, q["question"])
-                batched_content += f"Question {q['question_number']}: {q['question']}\n"
+                num_ans = q.get("num_answers", 1)
+                batched_content += f"Question {q['question_number']} (choose {num_ans} answer(s)): {q['question']}\n"
                 batched_content += f"A: {q['A']}\nB: {q['B']}\nC: {q['C']}\nD: {q['D']}\n"
                 batched_content += f"Context:\n{context}\n\n"
 

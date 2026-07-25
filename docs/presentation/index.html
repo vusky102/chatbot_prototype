@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RAG Chatbot Presentation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Fira+Code&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <div class="presentation-container">
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    
+    <div class="slide-viewport" id="slide-viewport">
+      <!-- Slides injected here -->
+      <h2 style="color: #6366F1;">Loading slides...</h2>
+    </div>
+
+    <div class="deck-controls glass-nav">
+      <div class="nav-left">
+        <button class="ctrl-btn icon-only" id="btn-fullscreen" title="Fullscreen (F)">F</button>
+        <button class="ctrl-btn icon-only" id="btn-overview" title="Overview (O)">O</button>
+        <button class="ctrl-btn icon-only" id="btn-notes" title="Notes (N)">N</button>
+      </div>
+      <div class="nav-center">
+        <button class="ctrl-btn" id="btn-prev">◀ Prev</button>
+        <div class="slide-indicator" id="slide-indicator">- / -</div>
+        <button class="ctrl-btn" id="btn-next">Next ▶</button>
+      </div>
+      <div class="nav-right">
+      </div>
+    </div>
+  </div>
+
+  <div class="notes-drawer glass-card hidden" id="notes-drawer">
+    <div class="notes-header">
+      <h3>Speaker Notes</h3>
+      <button class="close-btn" id="btn-close-notes">&times;</button>
+    </div>
+    <div class="notes-body" id="notes-body">
+      <!-- Notes injected here -->
+    </div>
+  </div>
+
+  <div class="overview-modal hidden" id="overview-modal">
+    <div class="overview-header">
+      <h2>Slide Overview</h2>
+      <button class="ctrl-btn icon-only" id="btn-close-overview" style="font-size: 1.5rem;">&times;</button>
+    </div>
+    <div class="overview-grid" id="overview-grid">
+      <!-- Thumbnails injected here -->
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
